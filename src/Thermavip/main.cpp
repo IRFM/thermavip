@@ -80,7 +80,13 @@ static void myMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 		case QtCriticalMsg:
 			vip_debug("Critical: %s\n", msg.toLatin1().data());
 			break;
-		case QtFatalMsg:
+		case QtFatalMsg: {
+			VipGILLocker lock;
+			VipPyError err(compute_error_t{});
+			if (err) {
+				vip_debug(err.toString().toLatin1().data());
+			}
+		}
 			vip_debug("Fatal: %s\n", msg.toLatin1().data());
 			abort();
 	}
@@ -136,7 +142,7 @@ static QSurfaceFormat makeDefaultFormat()
 
 struct Test : public QRunnable
 {
-	virtual void run(){}
+	virtual void run() {}
 };
 
 #ifdef _WIN32
@@ -208,11 +214,9 @@ static void vipRegisterFileAssociations()
 
 #endif
 
-
-
 int main(int argc, char** argv)
 {
-	//vip_log_detail::_vip_set_enable_debug(true);
+	// vip_log_detail::_vip_set_enable_debug(true);
 
 	{
 		vip_debug("Load thermavip.env...");
@@ -272,7 +276,6 @@ int main(int argc, char** argv)
 		}
 	}
 #endif
-
 
 	vip_debug("Setup command line options\n");
 
@@ -532,7 +535,7 @@ int main(int argc, char** argv)
 	if (VipCoreSettings::instance()->logFileDate())
 		log_file += "_" + QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss");
 	if (!VipLogging::instance().open(VipLogging::Cout | VipLogging::File,
-					std::unique_ptr<VipFileLogger>(new VipTextLogger(log_file, vipGetLogDirectory(), VipCoreSettings::instance()->logFileOverwrite()))))
+					 std::unique_ptr<VipFileLogger>(new VipTextLogger(log_file, vipGetLogDirectory(), VipCoreSettings::instance()->logFileOverwrite()))))
 		fprintf(stderr, "Unable to open a log file in %s\n", vipGetLogDirectory().toUtf8().data());
 	VipLogging::instance().setSavingEnabled(true);
 
@@ -637,8 +640,7 @@ int main(int argc, char** argv)
 			if (!no_splashscreen)
 				splash->showMessage("Check for new updates...", Qt::AlignBottom | Qt::AlignHCenter, Qt::white);
 
-			if (update.hasUpdate(install))
-			{
+			if (update.hasUpdate(install)) {
 				if (update.isDownloadFinished()) {
 					if (!no_splashscreen)
 						splash->hide();
@@ -716,7 +718,7 @@ int main(int argc, char** argv)
 			plugins = VipLoadPlugins::instance().plugins(p_section); // get all plugins from the p_section section of the Plugins.ini file
 	}
 
-	//TEST: install IPython
+	// TEST: install IPython
 	/* {
 		VipGILLocker locker;
 		vipExecPythonCode("import InstallIPython as ip");
@@ -726,8 +728,6 @@ int main(int argc, char** argv)
 			VIP_LOG_ERROR(err.toString());
 		}
 	}*/
-	
-
 
 	for (int i = 0; i < plugins.size(); ++i) {
 
@@ -884,8 +884,7 @@ int main(int argc, char** argv)
 		// QProcess::startDetached(VipUpdate::getUpdateProgram() + " --hide --command Thermavip -l " + QString::number(vipRestartMSecs()));
 		if (!QProcess::startDetached(VipUpdate::getUpdateProgram(),
 					     QStringList() << "--hide"
-							   << "--command" << vipAppCanonicalPath()
-							   << "-l" << QString::number(vipRestartMSecs())))
+							   << "--command" << vipAppCanonicalPath() << "-l" << QString::number(vipRestartMSecs())))
 			fprintf(stderr, "Unable to restart the application\n");
 	}
 

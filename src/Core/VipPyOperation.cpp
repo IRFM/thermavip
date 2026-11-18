@@ -130,6 +130,74 @@ QString vipGetPythonScriptsPlayerDirectory(const QString& suffix)
 	return path;
 }
 
+static VipPyObject importPyQtOrPySide()
+{
+	static VipPyObject qt;
+	if (!qt) {
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+		qt = VipPyObject(PyImport_ImportModule("PySide2"), borrow_t{});
+		if (!qt) {
+			VipPyError::clear();
+			qt = VipPyObject(PyImport_ImportModule("PyQt5"), borrow_t{});
+		}
+#else
+		qt = VipPyObject(PyImport_ImportModule("PySide6"), borrow_t{});
+		if (!qt) {
+			VipPyError::clear();
+			qt = VipPyObject(PyImport_ImportModule("PyQt6"), borrow_t{});
+		}
+#endif
+	}
+	return qt;
+}
+
+static VipPyObject& importThermavip()
+{
+	static VipPyObject thermavip = VipPyObject(PyImport_ImportModule("Thermavip"), borrow_t{});
+	return thermavip;
+}
+
+static VipPyObject& importProcessing()
+{
+	importThermavip();
+	static VipPyObject processing = VipPyObject(PyImport_ImportModule("Thermavip.Processing"), borrow_t{});
+	return processing;
+}
+
+static VipPyObject& importIODevice()
+{
+	importThermavip();
+	static VipPyObject iodevice = VipPyObject(PyImport_ImportModule("Thermavip.IODevice"), borrow_t{});
+	return iodevice;
+}
+
+static VipPyObject& importQtCpp()
+{
+	importThermavip();
+	static VipPyObject cpp = VipPyObject(PyImport_ImportModule("Thermavip.QtCpp"), borrow_t{});
+	return cpp;
+}
+
+static VipPyObject& vipAnyDataType()
+{
+	static VipPyObject any_data_type = importProcessing().getMember("VipAnyData");
+	return any_data_type;
+}
+
+static VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source = nullptr)
+{
+	VipAnyData ret;
+	if (source) {
+		ret.setSource(source);
+		ret.setAttributes(source->attributes());
+	}
+	ret.setData(obj.getMember("data").toVariant());
+	ret.setTime(obj.getMember("time").toVariant().toLongLong());
+	ret.setAttributes(obj.getMember("attributes").toVariant().value<QVariantMap>());
+	return ret;
+}
+
 static QStringList listPyDir(const QString& dir)
 {
 	QDir d(dir);
@@ -296,10 +364,11 @@ QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 
 		AllowVipPyObject allow(allowVipPyObject);
 
-		if (!pyobject)
+		if (!pyobject || pyobject == Py_None)
 			return QVariant();
-		else if (pyobject == Py_None)
-			return QVariant();
+
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)vipAnyDataType().pyObject()))
+			return vipToVariant(vipAnyDataFromPython(VipPyObject((void*)pyobject)));
 
 		for (int i = 0; i < getToVariant().size(); ++i) {
 			QVariant tmp = getToVariant()[i]((PyObject*)pyobject);
@@ -1102,38 +1171,10 @@ VipPyObject VipPyObject::import(const QString& module)
 	return VipPyObject(PyImport_ImportModule(module.toLatin1().data()), borrow_t{});
 }
 
-static VipPyObject importPyQtOrPySide()
-{
-	static VipPyObject qt;
-	if (!qt) {
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-		qt = VipPyObject(PyImport_ImportModule("PySide2"), borrow_t{});
-		if (!qt) {
-			VipPyError::clear();
-			qt = VipPyObject(PyImport_ImportModule("PyQt5"), borrow_t{});
-		}
-#else
-		qt = VipPyObject(PyImport_ImportModule("PySide6"), borrow_t{});
-		if (!qt) {
-			VipPyError::clear();
-			qt = VipPyObject(PyImport_ImportModule("PyQt6"), borrow_t{});
-		}
-#endif
-	}
-	return qt;
-}
-
-static VipPyObject importQtCpp()
-{
-	static VipPyObject thermavip = VipPyObject(PyImport_ImportModule("Thermavip"), borrow_t{});
-	static VipPyObject cpp = VipPyObject(PyImport_ImportModule("Thermavip.QtCpp"), borrow_t{});
-	return cpp;
-}
-
 VipPyObject vipPythonFromQObject(QObject* obj)
 {
 	VipGILLocker lock;
+	VipPyClearError clear;
 	VipPyError::clear();
 
 	if (!importPyQtOrPySide()) {
@@ -1156,6 +1197,7 @@ VipPyObject vipPythonFromQObject(QObject* obj)
 QObject* vipQObjectFromPython(const VipPyObject& obj)
 {
 	VipGILLocker lock;
+	VipPyClearError clear;
 	VipPyError::clear();
 
 	if (!importPyQtOrPySide()) {
@@ -1184,7 +1226,7 @@ QObject* vipQObjectFromPython(const VipPyObject& obj)
 	ret->setProperty("_vip_PyObject", vipToVariant(VipPyObjectPtr(new VipPyObject(obj))));
 
 	// We must ensure that pure Python slots are protected
-	//new VipPyQtWatcher(ret);
+	// new VipPyQtWatcher(ret);
 
 	return ret;
 }
@@ -1704,6 +1746,7 @@ public:
 
 		int i = PyRun_SimpleString(("import sys; sys.path.append('" + QFileInfo(vipAppCanonicalPath()).canonicalPath() + "/Python')").toLatin1().data());
 		i = PyRun_SimpleString("class _Redirect:\n"
+				       "    def __init__(self): self.encoding = 'utf-8'\n"
 				       "    def fileno(self): return 0\n"
 				       "    def clear(self): pass\n"
 				       "    def flush(self): pass\n"
@@ -2899,7 +2942,7 @@ VipPyIOOperation* VipPyInterpreter::reset(bool create_new)
 	}
 	this->d_data->pyIOOperation.reset();
 	this->d_data->pyIOOperation.reset(new VipPyLocal());
-	
+
 	if (!this->d_data->pyIOOperation->initialize(d_data->params)) {
 		this->d_data->pyIOOperation.reset();
 		return nullptr;

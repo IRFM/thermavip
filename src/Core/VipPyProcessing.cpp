@@ -897,10 +897,10 @@ static QObject* buildEditor(VipPyObject& proc, const QString& member = "editor_a
 	return (QObject*)address;
 }
 
-
 template<class Processing>
 QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 {
+	VipPyClearError clear;
 	auto* d_data = _this->d_data.get();
 
 	VipPyObjectPtr ptr;
@@ -934,7 +934,7 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 	info.metatype = vipVariantFromQObject(_this).userType();
 #else
 	info.metatype = vipVariantFromQObject(_this).metaType().id();
-#endif	
+#endif
 
 	info.displayHint = (VipProcessingObject::DisplayHint)object.callMember("get_display_hint").toVariant().toInt();
 	info.init = value;
@@ -1012,6 +1012,7 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 template<class Processing>
 bool applyPyProcessing(Processing* _this)
 {
+	VipPyClearError clear;
 	auto* d_data = _this->d_data.get();
 
 	if (!d_data->object) {
@@ -1127,7 +1128,6 @@ const VipPyObjectPtr& VipPyWrapperProcessing::processingClass() const noexcept
 	return d_data->type;
 }
 
-
 VipProcessingObject::DisplayHint VipPyWrapperProcessing::displayHint() const
 {
 	return d_data->info.displayHint;
@@ -1148,6 +1148,7 @@ bool VipPyWrapperProcessing::useEventLoop() const
 
 void VipPyWrapperProcessing::copyParameters(VipProcessingObject* dst)
 {
+	VipPyClearError clear;
 	VipPyWrapperProcessing* _dst = qobject_cast<VipPyWrapperProcessing*>(dst);
 	if (!_dst)
 		return;
@@ -1175,6 +1176,7 @@ void VipPyWrapperProcessing::addCustomIOFromPython(const VipPyObject& obj, QStri
 
 QObject* VipPyWrapperProcessing::editor()
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	return buildEditor(d_data->object);
@@ -1203,6 +1205,7 @@ void VipPyWrapperProcessing::apply()
 }
 void VipPyWrapperProcessing::resetProcessing()
 {
+	VipPyClearError clear;
 	if (!d_data->object) {
 		setError("VipPyWrapperProcessing: null Python object");
 		return;
@@ -1265,6 +1268,7 @@ bool VipPyWrapperIODevice::useEventLoop() const
 
 void VipPyWrapperIODevice::copyParameters(VipProcessingObject* dst)
 {
+	VipPyClearError clear;
 	VipPyWrapperIODevice* _dst = qobject_cast<VipPyWrapperIODevice*>(dst);
 	if (!_dst)
 		return;
@@ -1292,14 +1296,15 @@ void VipPyWrapperIODevice::addCustomIOFromPython(const VipPyObject& obj, QString
 
 QObject* VipPyWrapperIODevice::editor()
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	return buildEditor(d_data->object);
 }
 
-
 QObject* VipPyWrapperIODevice::toolBar()
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	return buildEditor(d_data->object, "tool_bar_address");
@@ -1337,6 +1342,7 @@ void VipPyWrapperIODevice::apply()
 }
 void VipPyWrapperIODevice::resetProcessing()
 {
+	VipPyClearError clear;
 	if (!d_data->object) {
 		setError("VipPyWrapperIODevice: null Python object");
 		return;
@@ -1351,6 +1357,7 @@ void VipPyWrapperIODevice::resetProcessing()
 
 bool VipPyWrapperIODevice::probe(const QString& filename, const QByteArray& first_bytes) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1361,6 +1368,7 @@ bool VipPyWrapperIODevice::probe(const QString& filename, const QByteArray& firs
 }
 VipIODevice::OpenModes VipPyWrapperIODevice::supportedModes() const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto mode = d_data->object.getMember("supported_modes").toVariant().toInt();
@@ -1373,6 +1381,7 @@ VipIODevice::OpenModes VipPyWrapperIODevice::supportedModes() const
 }
 bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1441,6 +1450,7 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 
 VipPyWrapperIODevice::DeviceType VipPyWrapperIODevice::deviceType() const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto type = d_data->object.getMember("device_type").toVariant().toInt();
@@ -1451,6 +1461,7 @@ VipPyWrapperIODevice::DeviceType VipPyWrapperIODevice::deviceType() const
 
 void VipPyWrapperIODevice::close()
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	d_data->object.callMember("close");
@@ -1458,6 +1469,7 @@ void VipPyWrapperIODevice::close()
 
 QString VipPyWrapperIODevice::fileFilters() const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto filters = d_data->object.getMember("file_filters").toVariant().toString();
@@ -1466,6 +1478,7 @@ QString VipPyWrapperIODevice::fileFilters() const
 
 qint64 VipPyWrapperIODevice::computeNextTime(qint64 time) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("next_time", QVariantList() << time);
@@ -1476,6 +1489,7 @@ qint64 VipPyWrapperIODevice::computeNextTime(qint64 time) const
 
 qint64 VipPyWrapperIODevice::computePreviousTime(qint64 time) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("prev_time", QVariantList() << time);
@@ -1486,6 +1500,7 @@ qint64 VipPyWrapperIODevice::computePreviousTime(qint64 time) const
 
 qint64 VipPyWrapperIODevice::computeClosestTime(qint64 time) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("closest_time", QVariantList() << time);
@@ -1496,6 +1511,7 @@ qint64 VipPyWrapperIODevice::computeClosestTime(qint64 time) const
 
 qint64 VipPyWrapperIODevice::computePosToTime(qint64 pos) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("pos_to_time", QVariantList() << pos);
@@ -1506,6 +1522,7 @@ qint64 VipPyWrapperIODevice::computePosToTime(qint64 pos) const
 
 qint64 VipPyWrapperIODevice::computeTimeToPos(qint64 time) const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("time_to_pos", QVariantList() << time);
@@ -1516,6 +1533,7 @@ qint64 VipPyWrapperIODevice::computeTimeToPos(qint64 time) const
 
 VipTimeRangeList VipPyWrapperIODevice::computeTimeWindow() const
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	auto ret = d_data->object.callMember("time_window");
@@ -1534,6 +1552,7 @@ VipTimeRangeList VipPyWrapperIODevice::computeTimeWindow() const
 
 bool VipPyWrapperIODevice::enableStreaming(bool enable)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 	d_data->object.callMember("set_streaming_enabled", QVariantList() << enable);
@@ -1544,6 +1563,7 @@ bool VipPyWrapperIODevice::enableStreaming(bool enable)
 
 bool VipPyWrapperIODevice::readData(qint64 time)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1604,6 +1624,7 @@ bool VipPyWrapperIODevice::readData(qint64 time)
 
 VipArchive& operator<<(VipArchive& arch, VipPyWrapperProcessing* p)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1616,6 +1637,7 @@ VipArchive& operator<<(VipArchive& arch, VipPyWrapperProcessing* p)
 
 VipArchive& operator>>(VipArchive& arch, VipPyWrapperProcessing* p)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1631,6 +1653,7 @@ VipArchive& operator>>(VipArchive& arch, VipPyWrapperProcessing* p)
 
 VipArchive& operator<<(VipArchive& arch, VipPyWrapperIODevice* p)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1643,6 +1666,7 @@ VipArchive& operator<<(VipArchive& arch, VipPyWrapperIODevice* p)
 
 VipArchive& operator>>(VipArchive& arch, VipPyWrapperIODevice* p)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
@@ -1664,11 +1688,10 @@ static int registerWrappersStreamOperators()
 }
 static int _registerWrappersStreamOperators = vipStaticInit("registerWrappersStreamOperators", registerWrappersStreamOperators);
 
-
 bool vipRegisterPythonProcessingObject(const VipPyObject& proc)
 {
 	VipGILLocker lock;
-
+	VipPyClearError clear;
 	// static VipPyObject vip_processing_type = getVipProcessingObjectType();
 
 	if (!proc || !proc.isType())

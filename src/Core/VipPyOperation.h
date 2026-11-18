@@ -103,7 +103,6 @@ VIP_CORE_EXPORT QVariant vipSendPythonVariable(const QString& name, const QVaria
 /// Returns the variable on success, a non null VipPyError on error.
 VIP_CORE_EXPORT QVariant vipRetrievePythonVariable(const QString& name, VipPyLocal* local = nullptr);
 
-
 /// @brief GIL RAII locker class
 class VIP_CORE_EXPORT VipGILLocker
 {
@@ -163,14 +162,23 @@ public:
 };
 Q_DECLARE_METATYPE(VipPyError)
 
+/// @brief Clear Python error flag on destruction
+struct VipPyClearError
+{
+	~VipPyClearError()
+	{
+		VipGILLocker lock;
+		VipPyError::clear();
+	}
+};
 
 /// @brief Minimal PyObject wrapper.
 ///
 /// Function members NEVER lock the GIL (i.e. the GIL must be held for every member call,
 /// including copy construction or copy assignment).
-/// 
+///
 /// Note however that the destructor DOES grab the GIL.
-/// 
+///
 class VIP_CORE_EXPORT VipPyObject
 {
 	void* pyobject = nullptr;
@@ -226,7 +234,6 @@ public:
 	bool setMember(const char* name, const VipPyObject& value) noexcept;
 	bool delMember(const char* name) noexcept;
 
-
 	/// @brief Call a member function and return its result
 	VipPyObject callMember(const char* name, const QVariantList& args = {}, const QVariantMap& kwargs = {});
 
@@ -240,8 +247,6 @@ Q_DECLARE_METATYPE(VipPyObjectPtr)
 
 VIP_CORE_EXPORT VipPyObject vipPythonFromQObject(QObject* obj);
 VIP_CORE_EXPORT QObject* vipQObjectFromPython(const VipPyObject& obj);
-
-
 
 /// @brief Command type executed by a VipPyIOOperation.
 ///
@@ -273,9 +278,9 @@ public:
 	QString string;	 //! Python code to execute (ExecCode) or variable name (SendObject and RetrieveObject)
 	QVariant object; //! Object to send (SendObject)
 
-	//VipPyCommand() noexcept = default;
-	//VIP_DEFAULT_MOVE(VipPyCommand);
-	
+	// VipPyCommand() noexcept = default;
+	// VIP_DEFAULT_MOVE(VipPyCommand);
+
 	/// @brief Returns the command unique identifier
 	QString buildId() const noexcept { return id.isEmpty() ? string : id; }
 };
@@ -501,8 +506,6 @@ public:
 	/// Returns false if pending operations are remaining.
 	virtual bool wait(bool* /*alive*/, int /*msecs*/ = -1) = 0;
 
-	
-
 protected:
 	// These functions should not be used directly
 
@@ -606,17 +609,15 @@ private:
 };
 VIP_REGISTER_QOBJECT_METATYPE(VipPyLocal*)
 
-
-
 /// @brief Ensure that a QOjbect and all its children will post GIL_Lock_Event before each meta call
 ///
 /// It is possible to mix PyQt widgets with thermavip, but that comes with some subtilities.
 /// First, thermavip must be compiled with the Qt version shipped with PyQt, or it just wont
 /// work. Then all PyQt calls to metafunction will crash unless we hold the GIL in the meantime.
-/// 
+///
 /// A VipPyQtWatcher must be attached to all PyQt widgets inserted into thermavip application
 /// to ensure a proper GIL holding.
-/// 
+///
 struct VIP_CORE_EXPORT VipPyQtWatcher : QObject
 {
 	QVector<QPointer<QObject>> watched;
@@ -639,7 +640,6 @@ protected:
 	virtual bool eventFilter(QObject* w, QEvent* evt);
 };
 
-
 /// @brief Global VipPyIOOperation class managing a VipPyLocal or another type of interpreter.
 /// Use VipPyInterpreter::instance to retrieve the global interpreter.
 /// The global interpreter is used by the Thermavip Python shell as well as Python processing objects.
@@ -652,14 +652,12 @@ class VIP_CORE_EXPORT VipPyInterpreter : public VipPyIOOperation
 	VipPyInterpreter(QObject* parent = nullptr);
 
 public:
-	
 	~VipPyInterpreter();
 
 	static VipPyInterpreter* instance();
 
 	void setPython(const QString& python);
 	QString python() const;
-
 
 	/// @brief Set/get the working directory that the interpreter will be initialized with
 	void setWorkingDirectory(const QString&);

@@ -735,12 +735,11 @@ struct PrintPyError
 	~PrintPyError()
 	{
 		VipPyError err(compute_error_t{});
-		if(err){
+		if (err) {
 			VIP_LOG_ERROR(err.toString());
-		} 
+		}
 	}
 };
-
 
 QString VipIPythonShellWidget::historyFile() const
 {
@@ -782,6 +781,7 @@ void VipIPythonShellWidget::restartInterpreter()
 }
 void VipIPythonShellWidget::addLines(const QStringList& lines)
 {
+	VipPyClearError clear;
 	VipGILLocker lock;
 	PrintPyError err;
 	VipPyError::clear();
@@ -825,8 +825,6 @@ void VipIPythonShellWidget::appendText(const QString& str, const QColor& color)
 	if (auto err = VipPyError(compute_error_t{})) {
 		VIP_LOG_ERROR(err.toString());
 	}
-
-	
 }
 
 void VipIPythonShellWidget::scrollToEnd()
@@ -869,7 +867,7 @@ void VipIPythonShellWidget::newOutput()
 	QTextCodec* codec = QTextCodec::codecForName("IBM850");
 	QString str = codec->toUnicode(bytes);
 	this->appendText(str, vipWidgetTextBrush(this).color());
-	
+
 	scrollToEnd();
 }
 
@@ -879,7 +877,7 @@ void VipIPythonShellWidget::newError()
 	QTextCodec* codec = QTextCodec::codecForName("IBM850");
 	QString str = codec->toUnicode(bytes);
 	appendText(str, vipDefaultTextErrorColor(this)); // Qt::red);
-	
+
 	scrollToEnd();
 }
 

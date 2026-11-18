@@ -76,7 +76,7 @@ class VipAnyData:
         except:
             return str()
         
-    @name.setter
+    @x_unit.setter
     def x_unit(self, n):
         self.attributes["XUnit"] = str(n) 
         
@@ -87,7 +87,7 @@ class VipAnyData:
         except:
             return str()
         
-    @name.setter
+    @y_unit.setter
     def y_unit(self, n):
         self.attributes["YUnit"] = str(n) 
         
@@ -98,9 +98,20 @@ class VipAnyData:
         except:
             return str()
         
-    @name.setter
+    @z_unit.setter
     def z_unit(self, n):
         self.attributes["ZUnit"] = str(n) 
+
+    @property
+    def stylesheet(self):
+        try:
+            return self.attributes["ZUnit"]
+        except:
+            return str()
+        
+    @stylesheet.setter
+    def stylesheet(self, n):
+        self.attributes["stylesheet"] = str(n) 
 
 
 class VipAnyDataList(UserList):

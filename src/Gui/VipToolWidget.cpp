@@ -176,7 +176,7 @@ VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
 	lay->addWidget(d_data->floating);
 	lay->addWidget(d_data->close);
 	lay->setSpacing(0);
-	lay->setContentsMargins(0, 3, 2, 3);
+	lay->setContentsMargins(0, 0, 2, 0);
 	setLayout(lay);
 
 	d_data->label->setMaximumWidth(350);
@@ -983,7 +983,7 @@ void VipToolWidgetPlayer::showEvent(QShowEvent* evt)
 
 void VipToolWidgetPlayer::focusWidgetChanged(VipDragWidget* w)
 {
-	if (!w )
+	if (!w)
 		m_player = nullptr;
 	else {
 		if (!vipIsObjectValid(w))
@@ -1605,7 +1605,7 @@ void VipMultiProgressWidget::setValue(QObjectPointer ptr, int value)
 		// Check bypass VipProgressWidget
 		auto it = d_data->threadProgress.find(p->thread());
 		if (it != d_data->threadProgress.end() && it.value()) {
-			if(vipIsObjectValid(p))
+			if (vipIsObjectValid(p))
 				it.value()->setValue(p, value);
 			else
 				return;
