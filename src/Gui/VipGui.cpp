@@ -2056,7 +2056,7 @@ QList<VipAbstractPlayer*> vipCreatePlayersFromPaths(const VipPathList& paths, Vi
 	p.setRange(0, paths.size());
 
 	for (int i = 0; i < paths.size(); ++i) {
-		p.setText("Open <b>" + paths[i].canonicalPath() + "</b>");
+		p.setText("<b>Open</b> " + paths[i].canonicalPath() );
 		VipIODevice* device = VipCreateDevice::create(paths[i]);
 		if (device) {
 			device->setPath(paths[i].canonicalPath());

@@ -851,33 +851,12 @@ static VipCustomIO fromPython(const VipPyObject& obj, VipProcessingIO::Type type
 	return ret;
 }
 
-static VipAnyData anyFromPython(const VipPyObject& obj, VipProcessingObject* source = nullptr)
-{
-	VipAnyData ret;
-	if (source) {
-		ret.setSource(source);
-		ret.setAttributes(source->attributes());
-	}
-	ret.setData(obj.getMember("data").toVariant());
-	ret.setTime(obj.getMember("time").toVariant().toLongLong());
-	ret.setAttributes(obj.getMember("attributes").toVariant().value<QVariantMap>());
-	return ret;
-}
-
 static QVariant anyToPython(const VipAnyData& any, VipPyObjectPtr& proc_type)
 {
-	static VipPyObject vip_any_data;
-	if (!vip_any_data)
-		vip_any_data = proc_type->callMember("get_any_data_type");
-
-	if (!vip_any_data)
-		return {};
-
-	QVariantMap kwargs;
-	kwargs.insert("data", any.data());
-	kwargs.insert("time", any.time());
-	kwargs.insert("attributes", QVariant::fromValue(any.attributes()));
-	return QVariant::fromValue(VipPyObjectPtr(new VipPyObject(vip_any_data.callMember("__call__", QVariantList(), kwargs))));
+	void* p = vipAnyDataToPython(any);
+	if (p)
+		return vipToVariant(VipPyObjectPtr(new VipPyObject(p, borrow_t{})));
+	return QVariant();
 }
 
 static QObject* buildEditor(VipPyObject& proc, const QString& member = "editor_address")
@@ -922,8 +901,10 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 			object = *obj;
 		}
 	}
-	if (!ptr || !object)
+	if (!ptr || !object) {
+		vip_debug("%s\n", VipPyError(compute_error_t{}).toString().toLatin1().data());
 		return false;
+	}
 
 	auto& info = d_data->info;
 
@@ -993,7 +974,7 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 	for (int i = 0; i < _this->topLevelPropertyCount(); ++i) {
 		auto prop = _this->topLevelPropertyAt(i);
 		if (prop->type() == VipProcessingIO::TypeProperty)
-			prop->toProperty()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << prop->name()), _this));
+			prop->toProperty()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << prop->name()), _this));
 		else {
 			auto mprop = prop->toMultiProperty();
 			auto io = d_data->object.callMember("get_io", QVariantList() << prop->name());
@@ -1002,7 +983,7 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 				return false;
 			}
 			for (int j = 0; j < mprop->count(); ++j)
-				mprop->at(j)->setData(anyFromPython(io.at(j), _this));
+				mprop->at(j)->setData(vipAnyDataFromPython(io.at(j), _this));
 		}
 	}
 
@@ -1078,7 +1059,7 @@ bool applyPyProcessing(Processing* _this)
 	for (int i = 0; i < _this->topLevelOutputCount(); ++i) {
 		auto out = _this->topLevelOutputAt(i);
 		if (out->type() == VipProcessingIO::TypeOutput)
-			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), _this));
+			out->toOutput()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), _this));
 		else {
 			auto mout = out->toMultiOutput();
 			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
@@ -1087,7 +1068,7 @@ bool applyPyProcessing(Processing* _this)
 				return false;
 			}
 			for (int j = 0; j < mout->count(); ++j)
-				mout->at(j)->setData(anyFromPython(io.at(j), _this));
+				mout->at(j)->setData(vipAnyDataFromPython(io.at(j), _this));
 		}
 	}
 
@@ -1379,16 +1360,32 @@ VipIODevice::OpenModes VipPyWrapperIODevice::supportedModes() const
 		return NotOpen;
 	return (OpenModes)mode;
 }
+
+
+bool VipPyWrapperIODevice::setPath(const QString& path)
+{
+	VipPyClearError clear;
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	QString p = removePrefix(path);
+	p.remove(d_data->info.classname + ":");
+
+	d_data->object.setMember("path", VipPyObject(vipVariantToPython(p), borrow_t{}));
+	if (!VipPyError(compute_error_t{})) {
+		return VipIODevice::setPath(path);
+	}
+	VIP_LOG_ERROR(VipPyError(compute_error_t{}).toString());
+	return false;
+}
+
 bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 {
 	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
 
-	QString p = removePrefix(path());
-	p.remove(d_data->info.classname + ":");
-
-	d_data->object.callMember("open", QVariantList() << p << (int)mode);
+	d_data->object.callMember("open", QVariantList() << (int)mode);
 
 	if (VipPyError err = VipPyError(compute_error_t{})) {
 		setLastError();
@@ -1426,7 +1423,7 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 	for (int i = 0; i < topLevelOutputCount(); ++i) {
 		auto out = topLevelOutputAt(i);
 		if (out->type() == VipProcessingIO::TypeOutput)
-			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
+			out->toOutput()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
 		else {
 			auto mout = out->toMultiOutput();
 			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
@@ -1434,7 +1431,7 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 				mout->resize(io.length());
 
 			for (int j = 0; j < mout->count(); ++j)
-				mout->at(j)->setData(anyFromPython(io.at(j), this));
+				mout->at(j)->setData(vipAnyDataFromPython(io.at(j), this));
 		}
 	}
 
@@ -1600,7 +1597,7 @@ bool VipPyWrapperIODevice::readData(qint64 time)
 	for (int i = 0; i < topLevelOutputCount(); ++i) {
 		auto out = topLevelOutputAt(i);
 		if (out->type() == VipProcessingIO::TypeOutput)
-			out->toOutput()->setData(anyFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
+			out->toOutput()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), this));
 		else {
 			auto mout = out->toMultiOutput();
 			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
@@ -1611,7 +1608,7 @@ bool VipPyWrapperIODevice::readData(qint64 time)
 			}
 
 			for (int j = 0; j < mout->count(); ++j)
-				mout->at(j)->setData(anyFromPython(io.at(j), this));
+				mout->at(j)->setData(vipAnyDataFromPython(io.at(j), this));
 		}
 	}
 

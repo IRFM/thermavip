@@ -25,6 +25,10 @@ class VIP_CORE_EXPORT VipMPEGSaver : public VipIODevice
 {
 	Q_OBJECT
 	VIP_IO(VipInput image)
+	VIP_IO(VipProperty fps) // Frequency
+	VIP_IO(VipProperty rate) // bits/s
+	VIP_IO(VipProperty codec_id) // codec Id, default to -1
+	VIP_IO(VipProperty threads)  // encoding threads
 
 	Q_CLASSINFO("image", "Input image to save")
 	Q_CLASSINFO("description", "Save a sequence of image as a mpeg video file. Internally uses ffmpeg.")

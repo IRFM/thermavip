@@ -41,6 +41,7 @@
 #include <functional>
 
 #include "VipNDArray.h"
+#include "VipProcessingObject.h"
 #include "VipCore.h"
 
 /// @brief Returns the Python data directory
@@ -87,6 +88,7 @@ VIP_CORE_EXPORT VipNDArray vipFromNumpyArray(void* numpy_array);
 VIP_CORE_EXPORT QString vipFromPyString(const void* obj);
 /// @brief Current thread Id
 VIP_CORE_EXPORT quint64 vipPyThreadId();
+
 
 class VipPyError;
 class VipPyLocal;
@@ -159,6 +161,9 @@ public:
 
 	/// @brief Clear Python set error
 	static void clear();
+
+	/// @brief Set the Python error flag with given message (equivalent to raising a RuntimeError)
+	static void set(const QString& msg);
 };
 Q_DECLARE_METATYPE(VipPyError)
 
@@ -247,6 +252,13 @@ Q_DECLARE_METATYPE(VipPyObjectPtr)
 
 VIP_CORE_EXPORT VipPyObject vipPythonFromQObject(QObject* obj);
 VIP_CORE_EXPORT QObject* vipQObjectFromPython(const VipPyObject& obj);
+
+
+/// @brief Convert Python object (of type Thermavip.VipAnyData) to VipAnyData. The GIL must be held.
+VIP_CORE_EXPORT VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source = nullptr);
+/// @brief Convert VipAnyData to Python Thermavip.VipAnyData. The GIL must be held.
+VIP_CORE_EXPORT void* vipAnyDataToPython(const VipAnyData& any);
+
 
 /// @brief Command type executed by a VipPyIOOperation.
 ///
@@ -760,5 +772,6 @@ VIP_CORE_EXPORT bool vipCanRunRestoredPythonCode(VipProcessingObject* obj);
 
 /// @brief Accept the Python @a obj carries, as an explicit user decision.
 VIP_CORE_EXPORT void vipAllowRestoredPythonCode(VipProcessingObject* obj);
+
 
 #endif

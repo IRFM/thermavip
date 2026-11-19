@@ -304,6 +304,7 @@ public:
 	// Reimplemented from VipIODevice
 	virtual bool probe(const QString& filename, const QByteArray& first_bytes = QByteArray()) const;
 	virtual VipIODevice::OpenModes supportedModes() const;
+	virtual bool setPath(const QString& path);
 	virtual bool open(VipIODevice::OpenModes);
 	virtual DeviceType deviceType() const;
 	virtual void close();

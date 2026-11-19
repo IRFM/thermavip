@@ -718,16 +718,6 @@ int main(int argc, char** argv)
 			plugins = VipLoadPlugins::instance().plugins(p_section); // get all plugins from the p_section section of the Plugins.ini file
 	}
 
-	// TEST: install IPython
-	/* {
-		VipGILLocker locker;
-		vipExecPythonCode("import InstallIPython as ip");
-		VipPyObject ipython = VipPyObject::eval("ip");
-		ipython.callMember("install_console", QVariantList() << vipToVariant(VipPyObjectPtr(new VipPyObject(vipPythonFromQObject(vipGetMainWindow())))));
-		if (VipPyError err = VipPyError(compute_error_t{})) {
-			VIP_LOG_ERROR(err.toString());
-		}
-	}*/
 
 	for (int i = 0; i < plugins.size(); ++i) {
 

@@ -1,7 +1,10 @@
 from .Processing import*
 from .QtCpp import qobject_address, qobject_from_address
+from Thermavip import VipInvalidTime, VipInvalidPosition
 from abc import abstractmethod
 import numpy as np
+import ctypes
+import os
 
 
 class VipIODevice(VipProcessingObject):
@@ -23,7 +26,8 @@ class VipIODevice(VipProcessingObject):
     
     To open a VipIODevice, you should usually follow these steps:
     - Set all necessary parameters
-    - Call VipIODevice.open() with the right path and open mode (usually VipIODevice.ReadOnly or VipIODevice.WriteOnly).
+    - Set the device path property
+    - Call VipIODevice.open() with the right open mode (usually VipIODevice.ReadOnly or VipIODevice.WriteOnly).
     
     WriteOnly devices behave like VipProcessingObject: you should reimplement the VipProcessingObject.apply() function to write input data.
     
@@ -42,7 +46,8 @@ class VipIODevice(VipProcessingObject):
     # Device types
     Temporal = 0   # A temporal device with a valid time window
     Sequential = 1 # A temporal device with no valid time window (data arrive when they arrive)
-    Resource = 2    # A non temporal, unique ressource,
+    Resource = 2    # A non temporal, unique ressource
+    FileHandler = 3 # File handler
     
     def __init__(self):
         super().__init__()
@@ -55,6 +60,7 @@ class VipIODevice(VipProcessingObject):
         self.__time = VipInvalidTime
         self.__size = 1
         self.__is_streaming = False
+        
         
     def __del__(self):
         self.close()
@@ -105,9 +111,9 @@ class VipIODevice(VipProcessingObject):
             return 0
     
     @abstractmethod        
-    def open(self, path, mode):
+    def open(self, mode):
         """
-        Open the device in given mode.
+        Open the device in given mode using the device path decorator.
         Derived implementation must call the base version on success.
         Parameters
         ----------
@@ -120,7 +126,7 @@ class VipIODevice(VipProcessingObject):
 
         """
         self.__mode = mode
-        self.__path = path
+        
     
     def close(self):
         """
@@ -170,6 +176,14 @@ class VipIODevice(VipProcessingObject):
 
         """
         return self.__path
+    
+    @path.setter
+    def path(self, p):
+        """
+        Set the device path.
+        This property must be set before calling VipIODevice.open().
+        """
+        self.__path = str(p)
     
     @property
     def time(self) -> int:
@@ -375,8 +389,8 @@ class VipIODevice(VipProcessingObject):
         """
         if (self.__mode & VipIODevice.ReadOnly) == 0:
             raise RuntimeError("Device not open in read mode")
-        if self.device_type == VipIODevice.Sequential:
-            raise RuntimeError("Cannot read on a sequential device")
+        if self.device_type == VipIODevice.Sequential or self.device_type == VipIODevice.FileHandler:
+            raise RuntimeError("Cannot read on a sequential / file handler device")
         self.__time = int(time)
         
     def apply(self):
@@ -438,8 +452,290 @@ class VipTimeRangeBasedGenerator(VipIODevice):
             return super().time_window()
         return [(self.__timestamps[0],self.__timestamps[-1])]
         
-        
+
+
+
+class VipFileHandler(VipIODevice):
+    """
+    Base file handler class.
+    A file handler is meant to perform any kind of action when opening a file,
+    but does not have a notion of output data.
+    For instance, Thermavip has a file handler class that opens Python files into the dedicated editor.
+
+    Subclasses must override open_file() method.
+    """
+    def __init__(self):
+        super().__init__()
+        self.device_type = VipIODevice.FileHandler
     
+    def open(self, mode):
+        if mode != VipIODevice.ReadOnly:
+            raise RuntimeError("VipFileHandler only supports ReadOnly mode")
+
+        self.open_file()
+        super().open(mode)
+
+    @abstractmethod        
+    def open_file(self):
+        """
+        Actual action performed when opening a file
+        """
+        pass
         
+
+
+class _VipDeviceFunctions(VipIODevice):
+    """
+    Base VipIODevice class for VipInputDevice and VipOutputDevice.
+    Reimplement the members close(), pos_to_time(), time_to_pos(), time_window() and 'path' property setter.
     
+    _VipDeviceFunctions provides multi-input/property/output.
+    
+    """
+    @VipMultiProperty
+    def properties(self): pass
+
+    @VipMultiOutput
+    def outputs(self): pass
+
+    @VipMultiInput
+    def inputs(self): pass
+
+
+    @VipIODevice.path.setter
+    def path(self, p):
+        """
+        'path' property setter, overridden from VipIODevice.
+        Setting the path will create the internal C++ VipIODevice and initialize 
+        this device inputs/outputs/properties. Therefore, it is useless to manipulate
+        inputs/outputs/properties before calling this property.
+        """
+        # Create the internal device
+        self.close()
+        self.dll._py_destroy(self._device)
+        self._device = 0
+        self._device = ctypes.c_uint64(self.dll._py_create(str(p).encode(), int(self._mode)))
+        VipIODevice.path.fset(self, p)
         
+        # Initialize properties and set their values
+        prop_count = self.dll._py_property_count(self._device)
+        self.properties.resize(prop_count)
+        for i in range(prop_count):
+            self.properties[i] = self.dll._py_get_property(self._device, i)
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+            
+        # Initialize inputs and set their values
+        in_count = self.dll._py_input_count(self._device)
+        self.inputs.resize(in_count)
+        for i in range(in_count):
+            self.inputs[i] = self.dll._py_get_input(self._device, int(i))
+            
+        # Initialize outputs and set their values
+        out_count = self.dll._py_output_count(self._device)
+        self.outputs.resize(out_count)
+        for i in range(out_count):
+            self.outputs[i] = self.dll._py_get_output(self._device, int(i))
+        
+        # Set the device type
+        self.device_type = self.dll._py_device_type(self._device)
+
+    def __init__(self, mode):
+        super().__init__()
+        self._device = 0
+        self._mode = mode
+        import distutils.ccompiler
+        if os.name == 'nt':
+            self.dll = ctypes.PyDLL("VipGui" + distutils.ccompiler.new_compiler().shared_lib_extension)
+        else:
+            self.dll = ctypes.PyDLL("libVipGui" + distutils.ccompiler.new_compiler().shared_lib_extension)
+        
+        self.dll._py_create.restype = ctypes.c_uint64
+        self.dll._py_open.argtypes = [ctypes.c_uint64, ctypes.c_int32]
+        
+        self.dll._py_output_count.argtypes = [ctypes.c_uint64]
+        self.dll._py_input_count.argtypes = [ctypes.c_uint64]
+        self.dll._py_property_count.argtypes = [ctypes.c_uint64]
+        
+        self.dll._py_set_input.argtypes = [ctypes.c_uint64, ctypes.c_int32]
+        
+        self.dll._py_set_input_count.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_set_property_count.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_set_output_count.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        
+        self.dll._py_input_name.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_input_name.restype = ctypes.py_object
+        
+        self.dll._py_output_name.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_output_name.restype = ctypes.py_object
+        
+        self.dll._py_property_name.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_property_name.restype = ctypes.py_object
+        
+        self.dll._py_get_input.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_get_input.restype = ctypes.py_object
+        
+        self.dll._py_get_output.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_get_output.restype = ctypes.py_object
+        
+        self.dll._py_get_property.argtype = [ctypes.c_uint64, ctypes.c_int32]
+        self.dll._py_get_property.restype = ctypes.py_object
+        
+        self.dll._py_set_property.argtypes = [ctypes.c_uint64, ctypes.c_int32, ctypes.py_object]
+        self.dll._py_set_input.argtypes = [ctypes.c_uint64, ctypes.c_int32, ctypes.py_object]
+        
+        self.dll._py_time_window.argtypes= [ctypes.c_uint64]
+        self.dll._py_time_window.restype = ctypes.py_object
+        
+        self.dll._py_pos_to_time.argtypes= [ctypes.c_uint64,ctypes.c_int64]
+        self.dll._py_pos_to_time.restype = ctypes.c_int64
+        
+        self.dll._py_time_to_pos.argtypes= [ctypes.c_uint64,ctypes.c_int64]
+        self.dll._py_time_to_pos.restype = ctypes.c_int64
+        
+        self.dll._py_get_size.argtypes= [ctypes.c_uint64]
+        self.dll._py_get_size.restype = ctypes.c_int64
+        
+        self.dll._py_device_type.argtypes= [ctypes.c_uint64]
+        self.dll._py_get_size.restype = ctypes.c_int32
+        
+        self.dll._py_apply.argtypes= [ctypes.c_uint64]
+        
+        
+    def __del__(self):
+        self.close()
+        self.dll._py_destroy(self._device)
+        
+    def close(self):
+        if self._device:
+            self.dll._py_close(self._device)
+        super().close()
+
+    def pos_to_time(self, pos : int) -> int:
+        return self.dll._py_pos_to_time(self._device, pos)
+    
+    def time_to_pos(self, time : int) -> int:
+        return self.dll._py_time_to_pos(self._device, time)
+    
+    def time_window(self) :
+        return self.dll._py_time_window(self._device)
+    
+    def set_property(self, name, value):
+        """
+        Convenient member that set a property value based on its name.
+        """
+        for p in self.properties:
+            if p.name == name:
+                p.data = value
+                return None
+        raise RuntimeError("invalid property name")
+    
+    
+    
+    
+class VipInputDevice(_VipDeviceFunctions):
+    """
+    VipIODevice class wrapping a C++ VipIODevice, and allowing to access read-only devices available within Thermavip.
+    
+    To use this class, you must:
+        1. Set the device path using the 'path' property
+        2. Modify if needed the device properties. The set_property() member is provided to simplify this task.
+        3. Open the device using VipInputDevice.open(). This will initialize/create the VipInputDevice outputs.
+        4. For temporal devices, call VipInputDevice.read() before accessing the outputs.
+    
+    """
+    def __init__(self):
+        super().__init__(VipIODevice.ReadOnly)
+        
+    def open(self, mode = VipIODevice.ReadOnly):
+        
+        if len(self.path) == 0:
+            raise RuntimeError("no valid path provided")
+            
+        # Set the property before
+        self.dll._py_set_property_count(self._device, len(self.properties))
+        for i in range(len(self.properties)):
+            self.dll._py_set_property(self._device, i, self.properties[i])
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+            
+        
+        # Open the device
+        self.dll._py_open(self._device, int(mode))
+
+        # Initialize outputs and set their values
+        out_count = self.dll._py_output_count(self._device)
+        self.outputs.resize(out_count)
+        for i in range(out_count):
+            self.outputs[i] = self.dll._py_get_output(self._device, int(i))
+            
+        # Set the device type and size
+        self.device_type = self.dll._py_device_type(self._device)
+        self.size = self.dll._py_get_size(self._device)
+        
+        super().open(mode)
+    
+    
+    def read(self, time : int):
+        
+        # Set the property before
+        self.dll._py_set_property_count(self._device, len(self.properties))
+        for i in range(len(self.properties)):
+            self.dll._py_set_property(self._device, i, self.properties[i])
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+
+        
+        self.dll._py_read(self._device, time)
+        
+        # Copy outputs
+        for i in range(len(self.outputs)):
+            self.outputs[i] = self.dll._py_get_output(self._device, i)
+            
+        super().read(time)
+        
+class VipOutputDevice(_VipDeviceFunctions):
+    
+    def __init__(self):
+        super().__init__(VipIODevice.WriteOnly)
+    
+    
+    def open(self, mode = VipIODevice.WriteOnly):
+        
+        if len(self.path) == 0:
+            raise RuntimeError("no valid path provided")
+            
+        # Set the property before
+        self.dll._py_set_property_count(self._device, len(self.properties))
+        for i in range(len(self.properties)):
+            self.dll._py_set_property(self._device, i, self.properties[i])
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+
+            
+        # Set the property before
+        self.dll._py_set_input_count(self._device, len(self.inputs))
+        for i in range(len(self.inputs)):
+            self.dll._py_set_input(self._device, i, self.inputs[i])
+            
+        # Open the device
+        self.dll._py_open(self._device, int(mode))
+        self.device_type = self.dll._py_device_type(self._device)
+        
+        # Set the device size
+        #self.size = self.dll._py_get_size(self._device)
+        
+        super().open(mode)
+    
+    def apply(self):
+        
+        # Set the property before
+        self.dll._py_set_property_count(self._device, len(self.properties))
+        for i in range(len(self.properties)):
+            self.dll._py_set_property(self._device, i, self.properties[i])
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+
+            
+        # Set the property before
+        self.dll._py_set_input_count(self._device, len(self.inputs))
+        for i in range(len(self.inputs)):
+            self.dll._py_set_input(self._device, i, self.inputs[i])
+            
+        self.dll._py_apply(self._device)
+        self.size = self.dll._py_get_size(self._device)

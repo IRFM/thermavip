@@ -179,13 +179,25 @@ static VipPyObject& importQtCpp()
 	return cpp;
 }
 
-static VipPyObject& vipAnyDataType()
+static VipPyObject& pyAnyDataType()
 {
-	static VipPyObject any_data_type = importProcessing().getMember("VipAnyData");
+	static VipPyObject any_data_type = importThermavip().getMember("VipAnyData");
 	return any_data_type;
 }
 
-static VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source = nullptr)
+static VipPyObject& pyPointVectorType()
+{
+	static VipPyObject inst = importThermavip().getMember("VipPointVector");
+	return inst;
+}
+
+static VipPyObject& pyIntervalSampleVectorType()
+{
+	static VipPyObject inst = importThermavip().getMember("VipIntervalSampleVector");
+	return inst;
+}
+
+VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source )
 {
 	VipAnyData ret;
 	if (source) {
@@ -195,6 +207,40 @@ static VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObje
 	ret.setData(obj.getMember("data").toVariant());
 	ret.setTime(obj.getMember("time").toVariant().toLongLong());
 	ret.setAttributes(obj.getMember("attributes").toVariant().value<QVariantMap>());
+	return ret;
+}
+
+void* vipAnyDataToPython(const VipAnyData& any)
+{
+	QVariantMap kwargs;
+	kwargs.insert("data", any.data());
+	kwargs.insert("time", any.time());
+	const auto attrs = any.attributes();
+	for (auto it = attrs.begin(); it != attrs.end(); ++it)
+		kwargs.insert(it.key(), it.value());
+
+	return pyAnyDataType().callMember("__call__", QVariantList(), kwargs).release();
+}
+
+static VipPointVector vipPointVectorFromPython(const VipPyObject& obj)
+{
+	VipPointVector ret;
+	const auto x = obj.getMember("x").toVariant().value<VipNDArray>();
+	const auto y = obj.getMember("y").toVariant().value<VipNDArray>();
+	return vipCreatePointVector(x, y);
+}
+
+static VipIntervalSampleVector vipIntervalSampleVectorFromPython(const VipPyObject& obj)
+{
+	const VipNDArrayType<double> intervals = obj.getMember("intervals").toVariant().value<VipNDArray>().toDouble();
+	const VipNDArrayType<double> values = obj.getMember("values").toVariant().value<VipNDArray>().toDouble();
+	if (intervals.shapeCount() != 2 ||  values.shapeCount() != 1 || intervals.shape(0) != values.shape(0))
+		return {};
+
+	VipIntervalSampleVector ret;
+	for (qsizetype i = 0; i < values.size(); ++i) {
+		ret.push_back(VipIntervalSample(values[i], VipInterval(intervals(i, 0), intervals(i, 1))));
+	}
 	return ret;
 }
 
@@ -367,9 +413,17 @@ QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 		if (!pyobject || pyobject == Py_None)
 			return QVariant();
 
-		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)vipAnyDataType().pyObject()))
+		// Handle pure Python wrappers
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pyAnyDataType().pyObject()))
 			return vipToVariant(vipAnyDataFromPython(VipPyObject((void*)pyobject)));
 
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pyPointVectorType().pyObject()))
+			return vipToVariant(vipPointVectorFromPython(VipPyObject((void*)pyobject)));
+
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pyIntervalSampleVectorType().pyObject()))
+			return vipToVariant(vipIntervalSampleVectorFromPython(VipPyObject((void*)pyobject)));
+
+		// Handle other types (ndarray, list, dict, ...)
 		for (int i = 0; i < getToVariant().size(); ++i) {
 			QVariant tmp = getToVariant()[i]((PyObject*)pyobject);
 			if (!tmp.isNull())
@@ -404,6 +458,10 @@ void* vipVariantToPython(const QVariant& variant)
 			PyObject* obj = (PyObject*)ptr->pyObject();
 			Py_INCREF(obj);
 			return obj;
+		}
+
+		if (variant.userType() == qMetaTypeId<VipAnyData>()) {
+			return vipAnyDataToPython(variant.value<VipAnyData>());
 		}
 
 		if (QObject* obj = variant.value<QObject*>()) {
@@ -939,6 +997,11 @@ QString VipPyError::toString() const
 void VipPyError::clear()
 {
 	PyErr_Clear();
+}
+
+void VipPyError::set(const QString& msg)
+{
+	PyErr_SetString(PyExc_RuntimeError, msg.toLatin1().data());
 }
 
 VipPyObject::VipPyObject(void* obj) noexcept
@@ -3198,3 +3261,5 @@ EvalResultType VipPyLocal::evalCodeMainThread(const QString& code)
 		return *result;
 	}
 }
+
+

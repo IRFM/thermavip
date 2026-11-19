@@ -19,6 +19,139 @@ import pickle
 import struct
 import numpy as np
 
+VipInvalidTime = -np.iinfo(np.int64).max
+VipInvalidPosition = VipInvalidTime
+VipMinTime = VipInvalidTime + 1
+VipMaxTime = np.iinfo(np.int64).max
+
+class VipAnyData:
+    """
+    Input/output type for VipProcessingObject.
+    Concatenation of any data type, a timestamp in nanoseconds and attributes.
+    VipAnyData can be used as argument of Thermavip.display().
+    """
+    
+    def __init__(self,*args, **kwargs):
+        self.data = None
+        self.time = VipInvalidTime
+        self.attributes = {}
+        
+        if len(args) > 1:
+            raise AttributeError("VipAnyData: invalid args")
+            
+        if len(args) == 1:
+            d = args[0]
+            if isinstance(d,VipAnyData):
+                self.data = d.data
+                self.time = d.time
+                self.attributes = d.attributes
+            else:
+                self.data = args[0]
+        
+        for name, value in kwargs.items():
+            if name == "data":
+                self.data = value
+            elif name == "time":
+                self.time = np.int64(value)
+            elif name == "name":
+                self.name = value
+            elif name == "x_unit":
+                self.x_unit = value
+            elif name == "y_unit":
+                self.y_unit = value
+            elif name == "z_unit":
+                self.z_unit = value
+            elif name == "stylesheet":
+                self.stylesheet = value
+            else:
+                self.attributes[name] = value
+                
+    def __str__(self):
+        return str({"data":self.data, "time": self.time, "attributes": self.attributes})
+    
+    def __repr__(self):
+        return str({"data":self.data, "time": self.time, "attributes": self.attributes})
+    
+    
+    ######################################################################
+    # Several usefull properties stored within the 'attributes' dictionary
+    ######################################################################
+    
+    @property
+    def name(self):
+        try:
+            return self.attributes["Name"]
+        except:
+            return str()
+        
+    @name.setter
+    def name(self, n):
+        self.attributes["Name"] = str(n)
+        
+    @property
+    def x_unit(self):
+        try:
+            return self.attributes["XUnit"]
+        except:
+            return str()
+        
+    @x_unit.setter
+    def x_unit(self, n):
+        self.attributes["XUnit"] = str(n) 
+        
+    @property
+    def y_unit(self):
+        try:
+            return self.attributes["YUnit"]
+        except:
+            return str()
+        
+    @y_unit.setter
+    def y_unit(self, n):
+        self.attributes["YUnit"] = str(n) 
+        
+    @property
+    def z_unit(self):
+        try:
+            return self.attributes["ZUnit"]
+        except:
+            return str()
+        
+    @z_unit.setter
+    def z_unit(self, n):
+        self.attributes["ZUnit"] = str(n) 
+
+    @property
+    def stylesheet(self):
+        try:
+            return self.attributes["stylesheet"]
+        except:
+            return str()
+        
+    @stylesheet.setter
+    def stylesheet(self, n):
+        self.attributes["stylesheet"] = str(n) 
+
+
+class VipPointVector:
+    """
+    Point vector class used within Thermavip to display curves.
+    Attributes 'x' and 'y' must be numpy ndarray objects.
+    """
+    def __init__(self, x = None, y = None):
+        self.x = np.array(x)
+        self.y = np.array(y)
+
+class VipIntervalSampleVector:
+    """
+    Interval sample vector class used within Thermavip to display histograms.
+    Attributes 'intervals' and 'values' must be numpy ndarray objects.
+    Attribute 'intervals' must have an inner shape of 2 (minimum and maximum value).
+    """
+    def __init__(self, intervals = None, values = None):
+        self.intervals = np.array(intervals)
+        self.values = np.array(values)
+
 
 def __call_thermavip_fun(name, args, kwargs = {} ):
     args = (name,) + args
@@ -71,36 +204,37 @@ def query(title = str(), default_value = str()):
     """
     return call_thermavip_fun('query',(title,default_value))
 
-def open(path, player = 0, side = ""):
-    """
-    Open given path in a new or existing player.
-    The path could be a video/signal file or a signal from a database (like WEST and ITER ones).
-    
-    When called with one argument, the path is opened on a new player within the current workspace.
-    
-    If player is not 0, the path will be opened in an existing player with given ID.
-    
-    Optionally, you might specify a side to open the path around an existing player, and therefore
-    create a multiplayer. The side argument could be either 'left', 'right', 'top' or 'bottom'.
-    
-    Returns the ID of the player on which the path was opened. Throw an exception on error.
-    """
-    return call_thermavip_fun('open',(path,player,side))
-    
-def open_data(data, player = 0, side = ""):
+def open(*args, **kwargs):
     """
     Open given data(s) in a new or existing player.
+    The argument list is all the data/paths to open in the same player.
     
-    When called with one argument, the data is opened on a new player within the current workspace.
+    Supported attributes are:
+    -   'player': if not 0, data will be opened in an existing player with given ID.
+    -   'side': one of 'left', 'right', top', 'bottom', only valid with a player Id. Open the data around existing one.
+    -   'name': created data name.
+    -   'x_unit': created data x unit.
+    -   'y_unit': created data y unit.
+    -   'z_unit': created data z unit.
+    -   'stylesheet': created data stylesheet.
     
-    If player is not 0, the data will be opened in an existing player with given ID.
+    Use VipAnyData to pass multiple data with different attributes.
+
+
+    This function can open:
+    -   numpy.ndarray objects as images,
+    -   VipPointVector objects as curves,
+    -   VipIntervalSampleVector objects as histograms,
+    -   VTK objects,
+    -   VipAnyData objects
+    -   Any path supported by Thermavip, including session files.
     
-    Optionally, you might specify a side to open the data around an existing player, and therefore
-    create a multiplayer. The side argument could be either 'left', 'right', 'top' or 'bottom'.
-    
-    Returns the ID of the player on which the data was opened. Throw an exception on error.
+    Returns the ID of the player on which the data was opened.
+    Returns 0 if a file was properly loaded without creating a dedicated player (like session files).
+    Throw an exception on error.
     """
-    return call_thermavip_fun('open_data',(data,player,side))
+    return call_thermavip_fun('open',args,kwargs)
+
 
 
 def close(player):
@@ -216,13 +350,31 @@ def is_valid_time(time):
     """
     Returns True if given time is valid, False otherwise.
     """
-    return time != -9223372036854775807
+    return time != VipInvalidTime
 
 def time_range():
     """
     Returns the time range [first,last] within the current workspace.
     """
     return call_thermavip_fun('time_range',())
+
+def play(enable: bool):
+    """
+    Start/stop playing the current workspace
+    """
+    return call_thermavip_fun('play',(enable,))
+
+def stream(enable: bool):
+    """
+    Start/stop streaming the current workspace
+    """
+    return call_thermavip_fun('stream',(enable,))
+
+def repeat(enable: bool):
+    """
+    Enable/disable repeat playing for the current workspace
+    """
+    return call_thermavip_fun('repeat',(enable,))
 
 def clamp_time( xy, min_time, max_time):
     """
@@ -432,7 +584,7 @@ def add_circle(player, y, x, radius, yaxis = ""):
 def time_trace(roi_player, rois, **kwargs ):
     """
     Extract the ROI(s) time trace.
-    player is the input video player.
+    roi_player is the input video player.
     rois is the list of ROIs (list of string of the form 'ROI_group:ROI_id') to extract the time trace from.
     
     This function can take extra arguments:
@@ -576,55 +728,6 @@ def clear_annotations(player, all_annotations = False):
     Otherwise, all annotations (including manual ones) are removed.
     """
     return call_thermavip_fun('clear_annotations',(player,all_annotations))
-
-def imshow(array,**kwargs):
-    """
-    Display an image in a new or existing player.
-    @param array the numpy image
-    @param kwargs additional arguments:
-        - 'title': the image title
-        - 'unit': image unit (as displayed on the colorbar)
-        - 'player': output player id (display in an existing player). A value of 0 means to create a new player.
-        
-    Returns the output player id on success.
-    
-    To control more features on how the image is displayed, use the stylesheet mechanism.
-    """
-    return call_thermavip_fun('imshow',(array,),kwargs)
-
-def plot(xy,**kwargs):
-    """
-    Plot a xy signal.
-    @param xy the signal to plot. It must be a 2D array or list of [x,y].
-    @param kwargs additional arguments:
-        - 'title': the plot title
-        - 'unit': the plot Y unit
-        - 'xunit': the plot X unit
-        - 'player': output player id (display in an existing player). A value of 0 means to create a new player.
-        - 'symbol': point symbol (see set_stylesheet function for more details)
-        - 'symbolsize': point symbol size (see set_stylesheet function for more details)
-        - 'symbolborder': point symbol border color (see set_stylesheet function for more details)
-        - 'symbolbackground': point symbol background color (see set_stylesheet function for more details)
-        - 'border': curve border color (see set_stylesheet function for more details)
-        - 'background': curve background color (see set_stylesheet function for more details)
-        - 'style': curve style (see set_stylesheet function for more details)
-        - 'color': curve and symbol color all at once (see set_stylesheet function for more details)
-        - 'baseline': curve baseline value used to draw the background (if any) (see set_stylesheet function for more details)
-        
-    Returns the output player id on success.
-    
-    To control more features on how the curve is displayed, use the stylesheet mechanism.
-    """
-    return call_thermavip_fun('plot',(np.array(xy),),kwargs)
-
-def plots(xys,**kwargs):
-    """
-    Plot several xy signals in one pass.
-    The arguments are the same as for plot function, but all of them must be a list of N elements, even the attributes.
-    Returns a list of player id (one per curve).
-    """	
-    lst = tuple(np.array(xy) for xy in xys)
-    return call_thermavip_fun('plots',(lst,),kwargs)
 
 def add_function(player, fun, function_name, item_name = str()):
     """

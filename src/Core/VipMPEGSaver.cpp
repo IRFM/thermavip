@@ -990,6 +990,10 @@ VipMPEGSaver::VipMPEGSaver(QObject* parent)
   : VipIODevice(parent)
 {
 	m_encoder = new VideoEncoder();
+	propertyName("fps")->setData(m_info.fps);
+	propertyName("rate")->setData(m_info.rate);
+	propertyName("codec_id")->setData(m_info.codec_id);
+	propertyName("threads")->setData(m_info.threads);
 }
 
 VipMPEGSaver::~VipMPEGSaver()
@@ -1050,6 +1054,11 @@ void VipMPEGSaver::apply()
 		return;
 	}
 
+	m_info.fps = propertyName("fps")->value<int>();
+	m_info.rate = propertyName("rate")->value<double>();
+	m_info.codec_id = propertyName("codec_id")->value<int>();
+	m_info.threads = propertyName("threads")->value<int>();
+
 	if (!m_encoder->IsOpen()) {
 		try {
 			m_info.width = img.width();
@@ -1088,9 +1097,18 @@ qint64 VipMPEGSaver::estimateFileSize() const
 void VipMPEGSaver::setAdditionalInfo(const VipMPEGIODeviceHandler& info)
 {
 	m_info = info;
+	propertyName("fps")->setData(m_info.fps);
+	propertyName("rate")->setData(m_info.rate);
+	propertyName("codec_id")->setData(m_info.codec_id);
+	propertyName("threads")->setData(m_info.threads);
 }
 
 VipMPEGIODeviceHandler VipMPEGSaver::additionalInfo() const
 {
+	auto & info = const_cast<VipMPEGIODeviceHandler&>(m_info);
+	info.fps = propertyName("fps")->value<int>();
+	info.rate = propertyName("rate")->value<double>();
+	info.codec_id = propertyName("codec_id")->value<int>();
+	info.threads = propertyName("threads")->value<int>();
 	return m_info;
 }

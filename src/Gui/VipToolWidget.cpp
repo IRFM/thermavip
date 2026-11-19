@@ -176,7 +176,7 @@ VipToolWidgetTitleBar::VipToolWidgetTitleBar(VipToolWidget* parent)
 	lay->addWidget(d_data->floating);
 	lay->addWidget(d_data->close);
 	lay->setSpacing(0);
-	lay->setContentsMargins(0, 0, 2, 0);
+	lay->setContentsMargins(0, 3, 2, 3);
 	setLayout(lay);
 
 	d_data->label->setMaximumWidth(350);

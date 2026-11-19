@@ -100,7 +100,8 @@ public:
 	{
 		Temporal,   //! A temporal device with a valid time window
 		Sequential, //! A temporal device with no valid time window (data arrive when they arrive)
-		Resource    //! A non temporal, unique ressource,
+		Resource,    //! A non temporal, unique ressource
+		FileHandler //! A file handler (inherits VipFileHandler)
 	};
 
 	/// Remove a device's class name prefix to a given path (look for the string 'device_name:' and remove it).
@@ -467,7 +468,7 @@ public:
 	~VipFileHandler();
 
 	/// We set the device type to Resource to avoid triggering timestamping features.
-	virtual DeviceType deviceType() const { return Resource; }
+	virtual DeviceType deviceType() const { return FileHandler; }
 	virtual VipIODevice::OpenModes supportedModes() const { return VipIODevice::ReadOnly; }
 	virtual bool open(VipIODevice::OpenModes mode);
 
@@ -791,22 +792,30 @@ public:
 
 	void setData(const QVariant& data)
 	{
-		d_data = data;
-		VipAnyData out = create(d_data);
-		outputAt(0)->setData(out);
+		d_data.setData( data);
+		d_data.setSource(this);
+		d_data.mergeAttributes(this->attributes());
+		outputAt(0)->setData(d_data);
 	}
-	const QVariant& data() const { return d_data; }
+	void setAnyData(const VipAnyData& data)
+	{
+		d_data = data;
+		d_data.setSource(this);
+		d_data.mergeAttributes(this->attributes());
+		outputAt(0)->setData(d_data);
+	}
+	const QVariant& data() const { return d_data.data(); }
+	const VipAnyData& anyData() const { return d_data; }
 
 protected:
 	virtual bool readData(qint64)
 	{
-		VipAnyData out = create(d_data);
-		outputAt(0)->setData(out);
+		outputAt(0)->setData(d_data);
 		return true;
 	}
 
 private:
-	QVariant d_data;
+	VipAnyData d_data;
 };
 
 VIP_REGISTER_QOBJECT_METATYPE(VipAnyResource*)

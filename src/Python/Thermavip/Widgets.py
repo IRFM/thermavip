@@ -1,16 +1,7 @@
 from qtpy import QtCore, QtWidgets
 from .QtCpp import *
+from Thermavip import *
 import builtins
-
-def __call_thermavip_fun(name, args, kwargs = {} ):
-    args = (name,) + args
-    return builtins.internal.call_internal_func(*args, **kwargs)      
-  
-def call_thermavip_fun(name, args = tuple(), kwargs = {}):
-    """
-    Call a Thermavip function registered with vipRegisterFunction
-    """
-    return __call_thermavip_fun(name, args, kwargs)
 
 
 def get_main_window() -> QtWidgets.QMainWindow:
@@ -32,7 +23,7 @@ def get_tool_widgets() -> list:
     """
     return call_thermavip_fun("get_tool_widgets")
 
-def get_tool_widget(name) -> list:
+def get_tool_widget(name) -> QtWidgets.QDockWidget:
     """
     Returns the tool widget (VipToolWidget class) with given name or None.
     """

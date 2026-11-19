@@ -900,10 +900,18 @@ VipPyInterpreterToolWidget::VipPyInterpreterToolWidget(VipMainWindow* win)
 {
 	VIP_CREATE_PRIVATE_DATA();
 
+#if defined(WIN32) && !defined(NDEBUG)
+	// Do NOT try to mix Qt debug libraries with PyQt or PySide
+#else
 	d_data->ipythonShell = new VipIPythonShellWidget();
-	if (!d_data->ipythonShell->textEdit()) {
-		delete d_data->ipythonShell.data();
-		d_data->ipythonShell = nullptr;
+#endif
+
+	if (!d_data->ipythonShell || !d_data->ipythonShell->textEdit()) {
+		if (d_data->ipythonShell) {
+			delete d_data->ipythonShell.data();
+			d_data->ipythonShell = nullptr;
+			
+		}
 		d_data->stdShell = new VipPyShellWidget();
 	}
 	d_data->shell = d_data->ipythonShell ? static_cast<VipBasePythonShell*>(d_data->ipythonShell.data()) : static_cast<VipBasePythonShell*>(d_data->stdShell.data());
