@@ -1,14 +1,17 @@
+"""Plugin entry-point conventions and lifecycle hooks for Thermavip."""
+
 
 
 class VipPluginInterface:
-    """
-    Base Plugin interface class
-    
-    A Python plugins must be located in a self contained folder within the 'VipPlugins' directory,    
-    and the plugin name is considered to be this folder's name.
-    
-    The plugin folder must contain a __init__.py in order to be imported. This __init__.py
-    must define at the module level an object which type inherits VipPluginInterface called 'PluginName_interface'
+    """Base class for a plugin's module-level interface object.
+
+    Place the plugin package under VipPlugins. Its directory name is the plugin
+    name. In its __init__.py, expose an instance of your subclass as
+    <PluginName>_interface. For a package named Camera, for example, the entry
+    point is Camera_interface.
+
+    Override load() for initialization, unload() for cleanup, and the metadata or
+    state hooks that apply to the plugin.
     """
 
     Success = 1      # Loading succeeded
@@ -16,63 +19,48 @@ class VipPluginInterface:
     ExitProcess = 3  # Loading succeeded and Thermavip should exit
     
     def load(self):
-        """
-        Load the plugin. This function is called only once at Thermavip startup.
-
-        Returns
-        -------
-        Code : int
-            load result, one of Success, Failure or ExitProcess.
-
+        """Initialize the plugin at startup. Return Success (the default), Failure, or
+        ExitProcess to request exit after successful loading.
         """
         return self.Success
     
     def unload(self):
-        """
-        Unload the plugin. This function is called only once at Thermavip exit.
+        """Release plugin resources at application exit. The base implementation takes
+        no action.
         """
         pass
     
     def version(self):
-        """
-        Returns the plugin version as a string.
-
-        """
+        """Return the plugin version string. Defaults to an empty string."""
         return str()
     
     def author(self):
-        """
-        Returns the plugin author.
-        """
+        """Return the plugin author as a string. Defaults to an empty string."""
         return str()
     
     def link(self):
-        """
-        Returns a reference link for this plugin.
-        """
+        """Return a reference URL for the plugin. Defaults to an empty string."""
         return str()
     
     def description(self):
-        """
-        Returns a small description of this plugin.
-        """
+        """Return a short description of the plugin. Defaults to an empty string."""
         return str()
     
     def stylesheet(self):
-        """
-        Returns an additional Qt stylesheet that must be added to the global application stylesheet.
+        """Return Qt stylesheet text to add to the application stylesheet. Defaults to
+        an empty string.
         """
         return str()
     
     def save(self):
-        """
-        Save the plugin state as a bytes object.
+        """Return the plugin state as bytes for a later restore(). Defaults to empty
+        bytes.
         """
         return bytes()
     
     def restore(self, state : bytes):
-        """
-        Restore the plugin state from a bytes object.
+        """Restore plugin state from the supplied bytes. The base implementation takes
+        no action.
         """
         pass
         

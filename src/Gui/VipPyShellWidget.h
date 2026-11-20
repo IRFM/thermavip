@@ -47,6 +47,11 @@ public:
 	virtual QTextEdit* textEdit() const = 0;
 
 	virtual void execLine(const QString& line) = 0;
+	virtual void execLines(const QStringList& lines)
+	{
+		for (const auto& l : lines)
+			execLine(l);
+	}
 	virtual void addLines(const QStringList& lines) = 0;
 	virtual bool isIDLE() const = 0;
 	virtual void restartInterpreter() = 0;
@@ -85,6 +90,7 @@ public:
 	virtual void appendText(const QString& str, const QColor& color);
 	/// @brief Add a command to the last valid editor position, and execute it
 	virtual void execLine(const QString& command);
+	
 	virtual void addLines(const QStringList& lines);
 	virtual bool isIDLE() const;
 	virtual void stopCurrentCode();
@@ -172,7 +178,7 @@ public Q_SLOTS:
 	virtual void restartInterpreter();
 	virtual void addLines(const QStringList& lines);
 	void addLine(const QString& line);
-	void execLines(const QStringList& lines);
+	virtual void execLines(const QStringList& lines);
 	virtual void execLine(const QString& line);
 	virtual void appendText(const QString& str, const QColor& color = Qt::transparent);
 	void scrollToEnd();

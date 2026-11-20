@@ -1034,7 +1034,7 @@ bool VipPyInterpreterToolWidget::eventFilter(QObject*, QEvent* evt)
 		QKeyEvent* key = static_cast<QKeyEvent*>(evt);
 		if (key->key() == Qt::Key_Return || key->key() == Qt::Key_F5) {
 
-			d_data->shell->execLines(historySelectedLines());
+			d_data->shell->addLines(historySelectedLines());
 			shellWidget()->raise();
 			shellEditor()->setFocus();
 			return true;

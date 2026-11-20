@@ -172,6 +172,13 @@ static VipPyObject& importIODevice()
 	return iodevice;
 }
 
+static VipPyObject& importShape()
+{
+	importThermavip();
+	static VipPyObject shape = VipPyObject(PyImport_ImportModule("Thermavip.Shape"), borrow_t{});
+	return shape;
+}
+
 static VipPyObject& importQtCpp()
 {
 	importThermavip();
@@ -197,7 +204,19 @@ static VipPyObject& pyIntervalSampleVectorType()
 	return inst;
 }
 
-VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source )
+static VipPyObject& pyShapeType()
+{
+	static VipPyObject inst = importShape().getMember("VipShape");
+	return inst;
+}
+
+static VipPyObject& pySceneModelType()
+{
+	static VipPyObject inst = importShape().getMember("VipSceneModel");
+	return inst;
+}
+
+VipAnyData vipAnyDataFromPython(const VipPyObject& obj, VipProcessingObject* source)
 {
 	VipAnyData ret;
 	if (source) {
@@ -222,6 +241,83 @@ void* vipAnyDataToPython(const VipAnyData& any)
 	return pyAnyDataType().callMember("__call__", QVariantList(), kwargs).release();
 }
 
+
+
+VipShape vipShapeFromPython(const VipPyObject& obj)
+{
+	VipShape ret;
+	const VipNDArrayType<double> points = obj.getMember("points").toVariant().value<VipNDArray>().toDouble();
+	if (!points.isEmpty() && points.shapeCount() == 2 && points.shape(1) == 2) {
+		if (points.shape(0) == 1)
+			ret.setPoint(QPointF(points[0], points[1]));
+		else {
+			QPolygonF poly;
+			for (qsizetype i = 0; i < points.shape(0); ++i)
+				poly.push_back({ points(i, 0), points(i, 1) });
+			if (poly.front() == poly.back())
+				ret.setPolygon(poly);
+			else
+				ret.setPolyline(poly);
+		}
+	}
+	ret.setAttributes(obj.getMember("attributes").toVariant().value<QVariantMap>());
+	ret.setGroup(obj.getMember("group").toVariant().toString());
+	return ret;
+}
+
+void* vipShapeToPython(const VipShape& any)
+{
+	QPolygonF poly;
+	if (any.type() == VipShape::Point)
+		poly.push_back(any.point());
+	else if (any.type() == VipShape::Polyline)
+		poly = any.polyline();
+	else
+		poly = any.polygon();
+
+	QVariant points;
+	if (!any.isNull()) {
+		VipNDArrayType<double> ar(vipVector(poly.size(), 2));
+		memcpy(ar.data(), poly.data(), poly.size() * sizeof(QPointF));
+		points = vipToVariant(VipNDArray(ar));
+	}
+	QVariantList args;
+	args << points << vipToVariant(any.attributes()) << any.group();
+	return pyShapeType().callMember("__call__", args).release();
+}
+
+VipSceneModel vipSceneModelFromPython(const VipPyObject& _obj)
+{
+	VipPyObject& obj = const_cast<VipPyObject&>(_obj);
+	VipSceneModel ret;
+	QVariantList groups = obj.getMember("groups").toVariant().value<QVariantList>();
+	for (const auto& gr : groups) {
+		auto group = gr.toString();
+		auto shapes = obj.callMember("shapes_for_group", QVariantList() << gr);
+		for (qsizetype i = 0; i < shapes.length(); ++i) {
+			auto shape = vipShapeFromPython(shapes.at(i));
+			ret.add(group, shape);
+		}
+	}
+	ret.setAttributes(obj.getMember("attributes").toVariant().value<QVariantMap>());
+	return ret;
+}
+
+void* vipSceneModelToPython(const VipSceneModel& any)
+{
+	auto ret = pySceneModelType().callMember("__call__");
+	const QStringList groups = any.groups();
+	for (const auto& gr : groups) {
+		const auto gr_shapes = any.shapes(gr);
+		for (const auto& shape : gr_shapes) {
+			VipPyObject sh(vipShapeToPython(shape), borrow_t{});
+			ret.callMember("add_shape", QVariantList() << vipToVariant(VipPyObjectPtr(new VipPyObject(sh))));
+		}
+	}
+	ret.setMember("attributes", VipPyObject(vipVariantToPython(vipToVariant(any.attributes())), borrow_t{}));
+	return ret.release();
+}
+
 static VipPointVector vipPointVectorFromPython(const VipPyObject& obj)
 {
 	VipPointVector ret;
@@ -234,7 +330,7 @@ static VipIntervalSampleVector vipIntervalSampleVectorFromPython(const VipPyObje
 {
 	const VipNDArrayType<double> intervals = obj.getMember("intervals").toVariant().value<VipNDArray>().toDouble();
 	const VipNDArrayType<double> values = obj.getMember("values").toVariant().value<VipNDArray>().toDouble();
-	if (intervals.shapeCount() != 2 ||  values.shapeCount() != 1 || intervals.shape(0) != values.shape(0))
+	if (intervals.shapeCount() != 2 || values.shapeCount() != 1 || intervals.shape(0) != values.shape(0))
 		return {};
 
 	VipIntervalSampleVector ret;
@@ -404,6 +500,8 @@ struct AllowVipPyObject
 	}
 };
 
+
+
 QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 {
 	try {
@@ -422,6 +520,12 @@ QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 
 		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pyIntervalSampleVectorType().pyObject()))
 			return vipToVariant(vipIntervalSampleVectorFromPython(VipPyObject((void*)pyobject)));
+
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pyShapeType().pyObject()))
+			return vipToVariant(vipShapeFromPython(VipPyObject((void*)pyobject)));
+
+		if (Py_IS_TYPE((PyObject*)pyobject, (PyTypeObject*)pySceneModelType().pyObject()))
+			return vipToVariant(vipSceneModelFromPython(VipPyObject((void*)pyobject)));
 
 		// Handle other types (ndarray, list, dict, ...)
 		for (int i = 0; i < getToVariant().size(); ++i) {
@@ -460,9 +564,14 @@ void* vipVariantToPython(const QVariant& variant)
 			return obj;
 		}
 
-		if (variant.userType() == qMetaTypeId<VipAnyData>()) {
+		if (variant.userType() == qMetaTypeId<VipAnyData>()) 
 			return vipAnyDataToPython(variant.value<VipAnyData>());
-		}
+
+		if (variant.userType() == qMetaTypeId<VipShape>()) 
+			return vipShapeToPython(variant.value<VipShape>());
+
+		if (variant.userType() == qMetaTypeId<VipSceneModel>()) 
+			return vipSceneModelToPython(variant.value<VipSceneModel>());
 
 		if (QObject* obj = variant.value<QObject*>()) {
 			auto pyobj = vipPythonFromQObject(obj);
@@ -1852,6 +1961,8 @@ public:
 		PyEval_SaveThread();
 		pythonInit = true;
 		vip_debug("Python initialized\n");
+
+
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -3264,5 +3375,3 @@ EvalResultType VipPyLocal::evalCodeMainThread(const QString& code)
 		return *result;
 	}
 }
-
-

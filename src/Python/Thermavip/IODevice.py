@@ -1,3 +1,10 @@
+"""Device interfaces for Thermavip plugins and wrappers for native devices.
+
+Subclass VipIODevice to supply a device, VipTimeRangeBasedGenerator for
+timestamp-indexed data, or VipFileHandler for an action on opening a file. Use
+VipInputDevice and VipOutputDevice to drive existing native devices.
+"""
+
 from .Processing import*
 from .QtCpp import qobject_address, qobject_from_address
 import Thermavip as th
@@ -9,32 +16,17 @@ import os
 
 
 class VipIODevice(VipProcessingObject):
-    """
-    The VipIODevice class is the base interface class of all I/O processing objects.
-    
-    VipIODevice provides both a common implementation and an abstract interface for devices that support reading and writing of VipAnyData.
-    VipIODevice is abstract and can not be instantiated, but it is common to use the interface it defines to provide device-independent I/O features.
-    
-    A VipIODevice can be of 3 types:
-    - VipIODevice.Temporal: it defines a start and end time, a time window and might have a notion of position. A Temporal devices support both input and output operations.
-    - VipIODevice.Sequential: input data can arrive at any time. It does not have a notion of time window or position. Sequential devices only support input operations. They are usually suited for
-    streaming operations.
-    - VipIODevice.Resource: the device holds one unique data. It does not have a notion of time and position at all. Resource devices are suited for non temporal data, like for instance an image file
-    on the drive.
-    
-    A read-only VipIODevice should defines one or more outputs (see VipProcessingObject for more details).
-    A write-only VipIODevice should defines one or more inputs.
-    
-    To open a VipIODevice, you should usually follow these steps:
-    - Set all necessary parameters
-    - Set the device path property
-    - Call VipIODevice.open() with the right open mode (usually VipIODevice.ReadOnly or VipIODevice.WriteOnly).
-    
-    WriteOnly devices behave like VipProcessingObject: you should reimplement the VipProcessingObject.apply() function to write input data.
-    
-    ReadOnly, Temporal or Resource devices don't care about the apply() function and must reimplement VipIODevice.read() instead.
-    Sequential devices do not need to reimplement any of these functions. Instead, they must reimplement VipIODevice.set_streaming_enabled() to start/stop sending output data.
-    
+    """Base class for devices that participate in a processing pipeline.
+
+    Set the device parameters and path before opening. A temporal device exposes a
+    time window and may support random access. A resource holds one data item. A
+    sequential device supplies data as it arrives. A file handler performs an
+    action when a file opens.
+
+    Declare outputs for a reader and inputs for a writer. Implement read() to
+    populate temporal or resource outputs, apply() to consume writer inputs, and
+    set_streaming_enabled() to control a sequential source. Subclasses implement
+    open() and call its base implementation on success.
     """
     
     # Supported open modes
@@ -52,15 +44,15 @@ class VipIODevice(VipProcessingObject):
     
     
     def _update_output(self, name, idx):
-        """
-        Called when an output is updated.
-        Reimplemented for streaming purpose.
-        """
+        """Notify Thermavip of an assignment only when this sequential device is open."""
         if self.device_type == VipIODevice.Sequential and self.is_open():
             th.call_thermavip_fun("_update_device_output", (int(id(self)), name, idx))
             
     
     def __init__(self):
+        """Initialize a closed, read-only resource with an empty path and invalid
+        time.
+        """
         super().__init__()
         self.supported_modes = VipIODevice.ReadOnly
         self.device_type = VipIODevice.Resource
@@ -74,23 +66,14 @@ class VipIODevice(VipProcessingObject):
         
         
     def __del__(self):
+        """Close the device during finalization."""
         self.close()
         
     def probe(self, filename, first_bytes = bytes()) -> bool:
-        """
-        Tells if this device can open given file based on its filename and optional first bytes
+        """Return whether filename starts with the concrete class name followed by a
+        colon.
 
-        Parameters
-        ----------
-        filename : str
-            Full path.
-        first_bytes : bytes, optional
-            File first bytes. The default is bytes().
-
-        Returns
-        -------
-        bool
-            True on success, False otherwise.
+        Override to recognize other paths or inspect the optional first_bytes.
         """
         try:
             return filename.index(type(self).__name__ + ":") == 0
@@ -98,13 +81,15 @@ class VipIODevice(VipProcessingObject):
             return False
         
     def tool_bar(self):
-        """
-        Returns a QToolBar that should be displayed as part of the player's toolbar.
-        Reimplement in subclasses to provide custom device edition from the player toolbar (if any).
+        """Return a new QToolBar for editing this device in a player, or None by
+        default.
         """
         pass
     
     def tool_bar_address(self) -> int:
+        """Return the cached toolbar address, recreating the toolbar if needed. Return
+        0 if absent or unaddressable.
+        """
         try:
             # This will throw on the first call, or if the C++ widget has been deleted
             return qobject_address(self.__tool_bar)
@@ -123,109 +108,51 @@ class VipIODevice(VipProcessingObject):
     
     @abstractmethod        
     def open(self, mode):
-        """
-        Open the device in given mode using the device path decorator.
-        Derived implementation must call the base version on success.
-        Parameters
-        ----------
-        mode : int
-            Combination of ReadOnly, WriteOnly and Append.
-
-        Returns
-        -------
-        None.
-
+        """Record the open mode. Call from a subclass after opening its underlying
+        device.
         """
         self.__mode = mode
         
     
     def close(self):
-        """
-        Close the device.
-        Overloads must call the base version.
-        Returns
-        -------
-        None.
-
+        """Mark the device as NotOpen. Overrides should also release their device
+        resources.
         """
         self.__mode = VipIODevice.NotOpen
         
     def is_open(self) -> bool:
-        """
-        Tells whether this device is open.
-        Returns
-        -------
-        bool
-            True for open device, False otherwise.
-
-        """
+        """Return whether the recorded mode differs from NotOpen."""
         return self.__mode != VipIODevice.NotOpen
     
     @property
     def open_mode(self) -> int:
-        """
-        Returns the device open mode.
-
-        Returns
-        -------
-        int
-            Device open mode.
-
-        """
+        """Mode recorded by open(), or NotOpen after initialization or close()."""
         return self.__mode
     
     @property
     def path(self) -> str:
-        """
-        Returns the device path.
-
-        Returns
-        -------
-        str
-            Device path.
-
-        """
+        """Device path. Assign it before calling open()."""
         return self.__path
     
     @path.setter
     def path(self, p):
-        """
-        Set the device path.
-        This property must be set before calling VipIODevice.open().
-        """
+        """Store the string representation of the device path."""
         self.__path = str(p)
     
     @property
     def time(self) -> int:
-        """
-        Returns the device current time.
-        Sequential devices always return VipInvalidTime.
-
-        Returns
-        -------
-        int
-            Device time.
-
-        """
+        """Last time recorded by the base read() method, initially VipInvalidTime."""
         return self.__time
     
     @property
     def is_streaming(self) -> bool:
+        """Streaming flag recorded by set_streaming_enabled(), initially False."""
         return self.__is_streaming
         
     @property
     def size(self) -> int:
-        """
-        For open Temporal (random-access) devices, this function returns the size of the device.
-        For sequential devices or if the size cannot be computed, returns a negative value.
-        If the device is closed, the size returned will not reflect the actual size of the device.
-        Note that some temporal devices might not have a notion of size or position.
-
-        Returns
-        -------
-        int
-            Device's size.
-
+        """Return 1 for a resource, VipInvalidPosition for a sequential device, or the
+        stored size otherwise.
         """
         if self.device_type == VipIODevice.Resource:
             return 1
@@ -235,25 +162,12 @@ class VipIODevice(VipProcessingObject):
     
     @size.setter
     def size(self, v : int):
+        """Store an integer size for device types that use the stored count."""
         self.__size = int(v)
         
     def next_time(self, time : int) -> int:
-        """
-        Return the next time after given one.
-        If provided time is the last valid timestamp, return it.
-        Return VipInvalidTime for sequential devices.
-        Default implementation relies on time_to_pos() and pos_to_time().
-        
-        Parameters
-        ----------
-        time : int
-            Input time.
-
-        Returns
-        -------
-        int
-            Next time.
-
+        """Map time to a position and return the timestamp one position later. An
+        invalid position yields VipInvalidTime.
         """
         pos = self.time_to_pos(time)
         if pos == VipInvalidPosition:
@@ -261,22 +175,8 @@ class VipIODevice(VipProcessingObject):
         return self.pos_to_time(pos +1)
     
     def prev_time(self,time : int) -> int:
-        """
-        Return the previous time before given one.
-        If provided time is the first valid timestamp, return it.
-        Return VipInvalidTime for sequential devices.
-        Default implementation relies on time_to_pos() and pos_to_time().
-        
-        Parameters
-        ----------
-        time : int
-            Input time.
-
-        Returns
-        -------
-        int
-            Previous time.
-
+        """Return time at position zero, VipInvalidTime for an invalid position, or
+        the preceding position's timestamp.
         """
         pos = self.time_to_pos(time)
         if pos == 0:
@@ -286,21 +186,8 @@ class VipIODevice(VipProcessingObject):
         return self.pos_to_time(pos - 1)
     
     def closest_time(self, time : int) -> int:
-        """
-        Return the closest valid time to given one.
-        Return VipInvalidTime for sequential devices.
-        Default implementation relies on time_to_pos() and pos_to_time().
-        
-        Parameters
-        ----------
-        time : int
-            Input time.
-
-        Returns
-        -------
-        int
-            Closest time.
-
+        """Convert time to a position and back. Return VipInvalidTime if the position
+        is invalid.
         """
         pos = self.time_to_pos(time)
         if pos == VipInvalidPosition:
@@ -308,94 +195,37 @@ class VipIODevice(VipProcessingObject):
         return self.pos_to_time(pos)
     
     def pos_to_time(self, pos : int) -> int:
-        """
-        Convert given position to its timestamp.
-        Negative position should return the first time.
-        Position >= size() should return the last valid timestamp.
-
-        Parameters
-        ----------
-        pos : int
-            Input position.
-
-        Returns
-        -------
-        int
-            Position timestamp.
-
+        """Return VipInvalidTime by default. Temporal overrides should clamp positions
+        to the first or last timestamp.
         """
         return VipInvalidTime
     
     def time_to_pos(self, time : int) -> int:
-        """
-        Convert given time to its closest position.
-        A time before the first valid timestamp should return 0.
-        A time after the last valid timestamp should return the last position.
-
-        Parameters
-        ----------
-        time : int
-            Input time.
-
-        Returns
-        -------
-        int
-            Output position.
-
+        """Return VipInvalidPosition by default. Temporal overrides should map times
+        to positions and clamp at the endpoints.
         """
         return VipInvalidPosition
     
     def time_window(self) :
-        """
-        For ReadOnly device, returns the valid time window as a list of (first_time, last_time)
-
-        Returns
-        -------
-        list
-            Device time window.
-
+        """Return a list of (first_time, last_time) pairs. The base pair contains two
+        VipInvalidTime values.
         """
         return [(VipInvalidTime,VipInvalidTime)]
     
     def set_streaming_enabled(self, enable : bool):
-        """
-        For sequential device only, start/stop streaming.
-        Derived implementation must call the base version.
-
-        Parameters
-        ----------
-        enable : bool
-            Enable/Disable streaming.
-
-        Returns
-        -------
-        None.
-
+        """Record the streaming flag for a sequential device. Other device types raise
+        RuntimeError. Call from streaming overrides.
         """
         if self.device_type != VipIODevice.Sequential:
             raise RuntimeError("Cannot enable/disable streaming on a non sequential device")
         self.__is_streaming = enable
     
     def read(self, time : int):
-        """
-        For ReadOnly device, read the device at given time.
-        This should set the device output(s).
-        Derived implementation must call the base version.
+        """Record the requested time as an integer. Reader subclasses populate the
+        outputs.
 
-        Parameters
-        ----------
-        time : int
-            DESCRIPTION.
-
-        Raises
-        ------
-        RuntimeError
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
+        Call this implementation from the override. It raises RuntimeError if the
+        mode lacks ReadOnly or the device is sequential or a file handler.
         """
         if (self.__mode & VipIODevice.ReadOnly) == 0:
             raise RuntimeError("Device not open in read mode")
@@ -404,35 +234,39 @@ class VipIODevice(VipProcessingObject):
         self.__time = int(time)
         
     def apply(self):
-        """
-        Reimplemented from VipProcessingObject as a ReadOnly VipIODevice
-        does not need to reimplement apply().
-        """
+        """Writer hook for consuming inputs. The base device takes no action."""
         pass
         
         
 class VipTimeRangeBasedGenerator(VipIODevice):
-    """
-    Helper base class for Temporal VipIODevice having a notion of size and position.
-    Set VipTimeRangeBasedGenerator.timestamps in the derive class to generate the time window.
+    """Base class for a temporal reader indexed by a one-dimensional sequence of
+    timestamps in nanoseconds.
     """
     
     def __init__(self):
+        """Select the Temporal device type and initialize an empty timestamp list."""
         super().__init__()
         self.device_type = VipIODevice.Temporal
         self.__timestamps = []
         
     @property
     def timestamps(self):
+        """Timestamp sequence used for position lookup. Assignment sorts the values
+        and updates size.
+        """
         return self.__timestamps
     
     @timestamps.setter
     def timestamps(self, times):
+        """Convert the sequence to a sorted int64 array and record its length."""
         self.__timestamps = np.sort(np.array(times, dtype = np.int64))
         self.size = len(self.__timestamps)
         
     
     def pos_to_time(self, pos : int) -> int:
+        """Return the timestamp at pos, clamped to either endpoint, or VipInvalidTime
+        for an empty sequence.
+        """
         if len(self.__timestamps) == 0:
             return VipInvalidTime
         if pos < 0:
@@ -442,6 +276,13 @@ class VipTimeRangeBasedGenerator(VipIODevice):
         return self.__timestamps[pos]
     
     def time_to_pos(self, time : int) -> int:
+        """Return a position using the sorted timestamps, or VipInvalidPosition if
+        empty.
+
+        Times at or beyond an endpoint map to that endpoint. For interior times the
+        implementation compares the insertion index and the following index. It can
+        raise IndexError when the insertion index is the last slot.
+        """
         if len(self.__timestamps) == 0:
             return VipInvalidPosition
         
@@ -458,6 +299,9 @@ class VipTimeRangeBasedGenerator(VipIODevice):
         return index +1
     
     def time_window(self):
+        """Return one pair spanning the first and last timestamps, or the base invalid
+        pair when empty.
+        """
         if len(self.__timestamps) == 0:
             return super().time_window()
         return [(self.__timestamps[0],self.__timestamps[-1])]
@@ -466,19 +310,18 @@ class VipTimeRangeBasedGenerator(VipIODevice):
 
 
 class VipFileHandler(VipIODevice):
-    """
-    Base file handler class.
-    A file handler is meant to perform any kind of action when opening a file,
-    but does not have a notion of output data.
-    For instance, Thermavip has a file handler class that opens Python files into the dedicated editor.
-
-    Subclasses must override open_file() method.
+    """Base class for opening a file to perform an action. Implement open_file() using
+    self.path.
     """
     def __init__(self):
+        """Initialize the device with the FileHandler type."""
         super().__init__()
         self.device_type = VipIODevice.FileHandler
     
     def open(self, mode):
+        """Run open_file() and record the mode on success. Any mode other than
+        ReadOnly raises RuntimeError.
+        """
         if mode != VipIODevice.ReadOnly:
             raise RuntimeError("VipFileHandler only supports ReadOnly mode")
 
@@ -487,38 +330,37 @@ class VipFileHandler(VipIODevice):
 
     @abstractmethod        
     def open_file(self):
-        """
-        Actual action performed when opening a file
-        """
+        """Perform the subclass-specific action for the current path."""
         pass
         
 
 
 class _VipDeviceFunctions(VipIODevice):
-    """
-    Base VipIODevice class for VipInputDevice and VipOutputDevice.
-    Reimplement the members close(), pos_to_time(), time_to_pos(), time_window() and 'path' property setter.
-    
-    _VipDeviceFunctions provides multi-input/property/output.
-    
+    """Common bridge to the native device selected by path and mode. It exposes
+    resizable properties, inputs, and outputs.
     """
     @VipMultiProperty
-    def properties(self): pass
+    def properties(self):
+        """Native device properties in index order."""
+        pass
 
     @VipMultiOutput
-    def outputs(self): pass
+    def outputs(self):
+        """Native device outputs in index order."""
+        pass
 
     @VipMultiInput
-    def inputs(self): pass
+    def inputs(self):
+        """Native device inputs in index order."""
+        pass
 
 
     @VipIODevice.path.setter
     def path(self, p):
-        """
-        'path' property setter, overridden from VipIODevice.
-        Setting the path will create the internal C++ VipIODevice and initialize 
-        this device inputs/outputs/properties. Therefore, it is useless to manipulate
-        inputs/outputs/properties before calling this property.
+        """Close and destroy the previous native device, then create one for p.
+
+        Read its properties, inputs, outputs, and device type. Configure the new
+        device's ports and properties after assigning this path.
         """
         # Create the internal device
         self.close()
@@ -550,6 +392,7 @@ class _VipDeviceFunctions(VipIODevice):
         self.device_type = self.dll._py_device_type(self._device)
 
     def __init__(self, mode):
+        """Load the VipGui device bindings and retain mode for native device creation."""
         super().__init__()
         self._device = 0
         self._mode = mode
@@ -612,26 +455,31 @@ class _VipDeviceFunctions(VipIODevice):
         
         
     def __del__(self):
+        """Close and destroy the native device."""
         self.close()
         self.dll._py_destroy(self._device)
         
     def close(self):
+        """Close the native device if present and reset the Python open mode."""
         if self._device:
             self.dll._py_close(self._device)
         super().close()
 
     def pos_to_time(self, pos : int) -> int:
+        """Ask the native device for the timestamp at pos."""
         return self.dll._py_pos_to_time(self._device, pos)
     
     def time_to_pos(self, time : int) -> int:
+        """Ask the native device for the position corresponding to time."""
         return self.dll._py_time_to_pos(self._device, time)
     
     def time_window(self) :
+        """Return the time window reported by the native device."""
         return self.dll._py_time_window(self._device)
     
     def set_property(self, name, value):
-        """
-        Convenient member that set a property value based on its name.
+        """Set the data of the first property named name. Raise RuntimeError if none
+        matches.
         """
         for p in self.properties:
             if p.name == name:
@@ -643,41 +491,31 @@ class _VipDeviceFunctions(VipIODevice):
     
     
 class VipInputDevice(_VipDeviceFunctions):
-    """
-    VipIODevice class wrapping a C++ VipIODevice, and allowing to access read-only devices available within Thermavip.
-    
-    To use this class, you must:
-        1. Set the device path using the 'path' property
-        2. Modify if needed the device properties. The set_property() member is provided to simplify this task.
-        3. Open the device using VipInputDevice.open(). This will initialize/create the VipInputDevice outputs.
-        4. For temporal devices, call VipInputDevice.read() before accessing the outputs.
-    
-    Usage:
-        
-    ```python
-    
-    # Open an mp4 video in read-only
-    d = VipInputDevice()
-    d.path = "C:/Users/VM213788/Desktop/test.mp4"
-    d.open()
-    
-    # Open another mp4 video in write-only
-    # and write all frames from input device
-    out = VipOutputDevice()
-    out.path = "C:/Users/VM213788/Desktop/test_lonnnnng.mp4"
-    out.set_property("threads", 8)
-    out.open()
-    for i in range(d.size):
-        d.read(d.pos_to_time(i))
-        out.inputs[0] = d.outputs[0]
-        out.apply()
-    out.close()
-    ```
+    """Read through a native Thermavip device selected by path.
+
+    Assign path, set any device-specific properties, and call open(). For a
+    temporal device, read a timestamp before accessing its outputs.
+
+        reader = VipInputDevice()
+        reader.path = "input.mp4"
+        reader.open()
+        try:
+            for i in range(reader.size):
+                reader.read(reader.pos_to_time(i))
+                frame = reader.outputs[0].data
+        finally:
+            reader.close()
+
+    This example assumes a supported video file with indexed frames.
     """
     def __init__(self):
+        """Select ReadOnly for native device creation."""
         super().__init__(VipIODevice.ReadOnly)
         
     def open(self, mode = VipIODevice.ReadOnly):
+        """Send properties, open the native device, and refresh outputs, type, and
+        size. An empty path raises RuntimeError.
+        """
         
         if len(self.path) == 0:
             raise RuntimeError("no valid path provided")
@@ -706,6 +544,9 @@ class VipInputDevice(_VipDeviceFunctions):
     
     
     def read(self, time : int):
+        """Send current properties, read at time, copy native outputs, then call the
+        base read() method.
+        """
         
         # Set the property before
         self.dll._py_set_property_count(self._device, len(self.properties))
@@ -723,12 +564,21 @@ class VipInputDevice(_VipDeviceFunctions):
         super().read(time)
         
 class VipOutputDevice(_VipDeviceFunctions):
+    """Write through a native Thermavip device selected by path.
+
+    Assign path before configuring properties and inputs. Call open(), assign the
+    data to inputs, and call apply() for each write. Call close() when finished.
+    """
     
     def __init__(self):
+        """Select WriteOnly for native device creation."""
         super().__init__(VipIODevice.WriteOnly)
     
     
     def open(self, mode = VipIODevice.WriteOnly):
+        """Send current properties and inputs, open the native device, and record its
+        type and mode. An empty path raises RuntimeError.
+        """
         
         if len(self.path) == 0:
             raise RuntimeError("no valid path provided")
@@ -755,6 +605,9 @@ class VipOutputDevice(_VipDeviceFunctions):
         super().open(mode)
     
     def apply(self):
+        """Send properties and inputs, invoke the native writer, and refresh the
+        stored size.
+        """
         
         # Set the property before
         self.dll._py_set_property_count(self._device, len(self.properties))
