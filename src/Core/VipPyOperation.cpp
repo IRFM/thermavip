@@ -926,6 +926,9 @@ VipPyError::VipPyError(compute_error_t)
 		}
 
 		PyErr_Restore(ptype, pvalue, ptraceback);
+
+		if (vip_log_detail::_vip_enable_debug())
+			vip_debug("%s\n", toString().toLatin1().data());
 	}
 }
 

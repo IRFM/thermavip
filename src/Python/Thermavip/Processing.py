@@ -4,6 +4,7 @@ from enum import IntEnum
 from abc import ABC
 from abc import abstractmethod
 import inspect
+import weakref
 import sys
 from typing import Union
 from .QtCpp import qobject_address, qobject_from_address
@@ -17,7 +18,12 @@ class VipAnyDataList(UserList):
     Behaves like a standard list(), but ensures that it ONLY contains VipAnyData instances.
     """
     
-    def __init__(self, lst = None):
+    def __init__(self, lst = None, parent_processing = None, io_name = None):
+        if parent_processing:
+            self.__parent = weakref.ref(parent_processing)  # Create a weak reference
+            self.__name = io_name
+        else:
+            self.__parent = None
         if lst is None:
             super().__init__(lst)
         else:
@@ -28,6 +34,11 @@ class VipAnyDataList(UserList):
             self.data[i] = item
         else:
             self.data[i] = VipAnyData(item)
+        # Notify parent processing of an output modification
+        if self.__parent:
+            parent = self.__parent()
+            if parent:
+                parent._update_output(self.__name, i)
             
     def __add__(self, other):
         if not isinstance(other, VipAnyDataList):
@@ -105,6 +116,8 @@ class VipBaseProcessingIO(ABC):
             obj.__dict__["_vip_" + self.__name__] = value
         else:
             obj.__dict__["_vip_" + self.__name__] = VipAnyData(value)
+        # Notify parent processing of an output modification
+        obj._update_output(self.__name__, 0)
             
     def __call__(self, function):
         return type(self)(self.description, self.editor)
@@ -141,11 +154,11 @@ class VipBaseProcessingMultiIO(VipBaseProcessingIO):
        try:
            obj.__dict__[name]
        except:
-           obj.__dict__[name] = VipAnyDataList()
+           obj.__dict__[name] = VipAnyDataList(parent_processing = obj, io_name = self.__name__)
        return obj.__dict__[name] 
 
     def __set__(self, obj, value):
-            obj.__dict__["_vip_" + self.__name__] = VipAnyDataList(value)
+            obj.__dict__["_vip_" + self.__name__] = VipAnyDataList(value, parent_processing = obj, io_name = self.__name__ )
         
 
 
@@ -302,12 +315,23 @@ class VipProcessingObject(ABC):
     def __attribute(self, key):
         return self.__dict__["_vip_" + key]
     
-    def __initializeIO(self, lst, value):
+    def __initializeIO(self, lst, val_type):
         try:
             for io in lst:
+                if val_type is VipAnyData:
+                    value = val_type()
+                else:
+                    value = VipAnyDataList(parent_processing = self, io_name = io.name)
                 self.__dict__["_vip_" + io.name] = value
         except: 
             pass
+        
+    def _update_output(self, name, idx):
+        """
+        Called when an output is updated.
+        Reimplemented in VipIODevice for streaming purpose.
+        """
+        pass
     
     ######################################
     # Public members
@@ -315,17 +339,17 @@ class VipProcessingObject(ABC):
     
     def __init__(self):
         # Initialize all inputs/properties/outputs
-        try: self.__initializeIO(type(self)._all_inputs, VipAnyData())
+        try: self.__initializeIO(type(self)._all_inputs, VipAnyData)
         except: pass
-        try: self.__initializeIO(type(self)._all_multi_inputs, VipAnyDataList())
+        try: self.__initializeIO(type(self)._all_multi_inputs, VipAnyDataList)
         except: pass
-        try: self.__initializeIO(type(self)._all_properties, VipAnyData())
+        try: self.__initializeIO(type(self)._all_properties, VipAnyData)
         except: pass
-        try: self.__initializeIO(type(self)._all_multi_properties, VipAnyDataList())
+        try: self.__initializeIO(type(self)._all_multi_properties, VipAnyDataList)
         except: pass
         try: self.__initializeIO(type(self)._all_outputs, VipAnyData())
         except: pass
-        try: self.__initializeIO(type(self)._all_multi_outputs, VipAnyDataList())
+        try: self.__initializeIO(type(self)._all_multi_outputs, VipAnyDataList)
         except: pass
     
     def get_io(self, name) -> Union[VipAnyData , VipAnyDataList] :

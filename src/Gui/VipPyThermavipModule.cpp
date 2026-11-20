@@ -521,6 +521,91 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 	return QVariant(VipUniqueId::id(VipDragWidget::fromChild(new_player)));
 }
 
+static QVariant make_progress(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size())
+		return error("invalid arguments number of arguments");
+
+	std::unique_ptr<VipProgress> p(new VipProgress());
+
+	for (auto it = kwargs.begin(); it != kwargs.end(); ++it) {
+
+		if (it.key() == "range") {
+			auto lst = it.value().value<QVariantList>();
+			if (lst.size() != 2)
+				return error("invalide 'range' value");
+			p->setRange(lst[0].toDouble(), lst[1].toDouble());
+		}
+		else if (it.key() == "modal") {
+			p->setModal(it.value().toBool());
+		}
+		else if (it.key() == "cancelable") {
+			p->setCancelable(it.value().toBool());
+		}
+		else if (it.key() == "text") {
+			p->setText(it.value().toString());
+		}
+		else if (it.key() == "value") {
+			p->setValue(it.value().toDouble());
+		}
+	}
+	return (quint64)(uintptr_t)p.release();
+}
+static QVariant destroy_progress(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 1)
+		return error("invalid arguments number of arguments");
+
+	auto * p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	delete p;
+	return {};
+}
+static QVariant progress_set_value(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 2)
+		return error("invalid arguments number of arguments");
+
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	p->setValue(lst[1].toDouble());
+	return {};
+}
+static QVariant progress_value(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 1)
+		return error("invalid arguments number of arguments");
+
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	return p->value();
+	return {};
+}
+static QVariant progress_set_text(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 2)
+		return error("invalid arguments number of arguments");
+
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	p->setText(lst[1].toString());
+	return {};
+}
+static QVariant progress_text(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 1)
+		return error("invalid arguments number of arguments");
+
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	return p->text();
+	return {};
+}
+static QVariant progress_canceled(const QVariantList& lst, const QVariantMap& kwargs)
+{
+	if (lst.size() != 1)
+		return error("invalid arguments number of arguments");
+
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	return p->canceled();
+}
+
+
 static QVariant closeWindow(int player)
 {
 	VipBaseDragWidget* w = (VipUniqueId::find<VipBaseDragWidget>(player));
@@ -1914,6 +1999,33 @@ static QVariant get_tool_widget(const QString& name)
 	return {};
 }
 
+static QVariant add_tool_widget(const VipPyObjectPtr& widget, bool floating, int orientation, int area, int allowed_areas)
+{
+	if (!widget || !(*widget))
+		return error("invalid 'widget' argument");
+
+	QWidget* w = qobject_cast<QWidget*>(vipQObjectFromPython(*widget));
+	if (!w)
+		return error("invalid 'widget' argument");
+
+	auto a = (Qt::DockWidgetArea)area;
+	auto allowed = (Qt::DockWidgetAreas)allowed_areas;
+	if (!(allowed & a))
+		allowed = a;
+
+	QString title = w->windowTitle();
+	VipToolWidget* tool = new VipToolWidget(vipGetMainWindow());
+	tool->setWindowTitle(title);
+	tool->setObjectName(title);
+	tool->setWindowIcon(w->windowIcon());
+	tool->setWidget(w, (Qt::Orientation)orientation);
+	tool->setAllowedAreas((Qt::DockWidgetAreas)allowed);
+	vipGetMainWindow()->addDockWidget((Qt::DockWidgetArea)a, tool);
+	tool->setFloating(floating);
+	return vipToVariant(VipPyObjectPtr(new VipPyObject(vipPythonFromQObject(tool))));
+}
+
+
 /* static QVariant addFunction(int player, PyObject* fun, const QString& fun_name, const QString& item_name)
 {
 	//find the player
@@ -2000,8 +2112,36 @@ static QVariant getFunction(int player, const QString & fun_name, const QString 
 	return ResultType(QVariant::fromValue((VipProcessingObject*)found), QString());
 }*/
 
+#include <QLibraryInfo>
+
+static QVariant _can_load_qtpy()
+{
+	bool ret = !QLibraryInfo::isDebugBuild();
+	return ret;
+}
+
+static QVariant _update_device_output(quint64 addr, const QString & name, int index)
+{
+	VipPyWrapperIODevice::updateDeviceOutput(addr, name, index);
+	return {};
+}
+
 static int registerFunctions()
 {
+	// Private functions
+	vipRegisterFunction(vipMakeFunctionObject(_can_load_qtpy, "_can_load_qtpy", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(_update_device_output, "_update_device_output", {}, false));
+
+	// VipProgress wrapper functions
+	vipRegisterFunction(make_progress, "make_progress",{},false);
+	vipRegisterFunction(destroy_progress, "destroy_progress", {}, false);
+	vipRegisterFunction(progress_set_value, "progress_set_value", {}, false);
+	vipRegisterFunction(progress_value, "progress_value", {}, false);
+	vipRegisterFunction(progress_set_text, "progress_set_text", {}, false);
+	vipRegisterFunction(progress_text, "progress_text", {}, false);
+	vipRegisterFunction(progress_canceled, "progress_canceled", {}, false);
+
+
 	vipRegisterFunction(vipMakeFunctionObject(registerPyProcessing, "register_processing"));
 	vipRegisterFunction(vipMakeFunctionObject(playerType, "player_type"));
 	vipRegisterFunction(vipMakeFunctionObject(itemList, "item_list"));
@@ -2078,6 +2218,7 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(get_main_window, "get_main_window"));
 	vipRegisterFunction(vipMakeFunctionObject(get_tool_widgets, "get_tool_widgets"));
 	vipRegisterFunction(vipMakeFunctionObject(get_tool_widget, "get_tool_widget"));
+	vipRegisterFunction(vipMakeFunctionObject(add_tool_widget, "add_tool_widget"));
 
 	return 0;
 }

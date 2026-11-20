@@ -1199,6 +1199,39 @@ void VipPyWrapperProcessing::resetProcessing()
 		setLastError();
 }
 
+
+
+
+#include <mutex>
+#include <map>
+
+static std::mutex _io_devices_mutex;
+static std::map<std::uint64_t,QPointer<VipPyWrapperIODevice>> _io_devices;
+
+void add_device(uint64_t key, VipPyWrapperIODevice* d)
+{
+	std::scoped_lock<std::mutex> lock(_io_devices_mutex);
+	_io_devices.insert({ key, d });
+}
+void remove_device(uint64_t key)
+{
+	std::scoped_lock<std::mutex> lock(_io_devices_mutex);
+	auto it = _io_devices.find(key);
+	if (it != _io_devices.end()) {
+		_io_devices.erase(it);
+	}
+}
+VipPyWrapperIODevice* get_device(uint64_t key)
+{
+	std::scoped_lock<std::mutex> lock(_io_devices_mutex);
+	auto it = _io_devices.find(key);
+	if (it != _io_devices.end()) {
+		return it->second;
+	}
+	return nullptr;
+}
+
+
 class VipPyWrapperIODevice::PrivateData
 {
 public:
@@ -1217,7 +1250,10 @@ VipPyWrapperIODevice::VipPyWrapperIODevice(QObject* parent)
 	VIP_CREATE_PRIVATE_DATA();
 }
 
-VipPyWrapperIODevice::~VipPyWrapperIODevice() {}
+VipPyWrapperIODevice::~VipPyWrapperIODevice() 
+{
+	close();
+}
 
 const VipPyObject& VipPyWrapperIODevice::processingObject() const noexcept
 {
@@ -1308,6 +1344,40 @@ void VipPyWrapperIODevice::setLastError()
 	}
 }
 
+void VipPyWrapperIODevice::updateDeviceOutput(quint64 addr, const QString& name, int index)
+{
+	if (VipPyWrapperIODevice* d = get_device(addr))
+		d->updateOutput(name, index);
+}
+
+void VipPyWrapperIODevice::updateOutput(const QString& name, int index)
+{
+	//TODO:
+	// update output for streaming device
+
+	VipPyClearError clear;
+	VipGILLocker lock;
+	VipPyError::clear();
+
+	auto* out = topLevelOutputName(name);
+	if (!out)
+		return setError("invalid output name");
+
+	if (out->toOutput()) {
+		if (index != 0)
+			return setError("invalid output index");
+		out->toOutput()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << name), this));
+	}
+	else {
+		auto* mout = out->toMultiOutput();
+		if (index < 0 || index >= mout->count())
+			return setError("invalid output multi index");
+		auto io = d_data->object.callMember("get_io", QVariantList() << name);
+		mout->at(index)->setData(vipAnyDataFromPython(io.at(index), this));
+	}
+
+}
+
 void VipPyWrapperIODevice::apply()
 {
 	VipGILLocker lock;
@@ -1381,6 +1451,8 @@ bool VipPyWrapperIODevice::setPath(const QString& path)
 
 bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 {
+	close();
+
 	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
@@ -1440,6 +1512,8 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 		return false;
 	}
 
+	add_device((uint64_t)(uintptr_t)d_data->object.pyObject(), this);
+
 	setSize(size);
 	setOpenMode(mode);
 	return true;
@@ -1458,6 +1532,8 @@ VipPyWrapperIODevice::DeviceType VipPyWrapperIODevice::deviceType() const
 
 void VipPyWrapperIODevice::close()
 {
+	remove_device((uint64_t)(uintptr_t)d_data->object.pyObject());
+	VipIODevice::close();
 	VipPyClearError clear;
 	VipGILLocker lock;
 	VipPyError::clear();
@@ -1537,6 +1613,11 @@ VipTimeRangeList VipPyWrapperIODevice::computeTimeWindow() const
 	if (VipPyError err = VipPyError(compute_error_t{}))
 		return {};
 	const QVariantList lst = ret.toVariant().value<QVariantList>();
+	if (lst.size() == 2 && lst[0].canConvert<qint64>() && lst[1].canConvert<qint64>()) {
+		VipTimeRangeList win;
+		win.push_back(VipTimeRange(lst[0].toLongLong(), lst[1].toLongLong()));
+		return win;
+	}
 	VipTimeRangeList win;
 	for (const QVariant& v : lst) {
 		const auto range = v.value<QVariantList>();

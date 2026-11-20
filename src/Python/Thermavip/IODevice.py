@@ -1,5 +1,6 @@
 from .Processing import*
 from .QtCpp import qobject_address, qobject_from_address
+import Thermavip as th
 from Thermavip import VipInvalidTime, VipInvalidPosition
 from abc import abstractmethod
 import numpy as np
@@ -48,6 +49,16 @@ class VipIODevice(VipProcessingObject):
     Sequential = 1 # A temporal device with no valid time window (data arrive when they arrive)
     Resource = 2    # A non temporal, unique ressource
     FileHandler = 3 # File handler
+    
+    
+    def _update_output(self, name, idx):
+        """
+        Called when an output is updated.
+        Reimplemented for streaming purpose.
+        """
+        if self.device_type == VipIODevice.Sequential and self.is_open():
+            th.call_thermavip_fun("_update_device_output", (int(id(self)), name, idx))
+            
     
     def __init__(self):
         super().__init__()
@@ -138,7 +149,6 @@ class VipIODevice(VipProcessingObject):
 
         """
         self.__mode = VipIODevice.NotOpen
-        self.__path = str()
         
     def is_open(self) -> bool:
         """
@@ -642,6 +652,27 @@ class VipInputDevice(_VipDeviceFunctions):
         3. Open the device using VipInputDevice.open(). This will initialize/create the VipInputDevice outputs.
         4. For temporal devices, call VipInputDevice.read() before accessing the outputs.
     
+    Usage:
+        
+    ```python
+    
+    # Open an mp4 video in read-only
+    d = VipInputDevice()
+    d.path = "C:/Users/VM213788/Desktop/test.mp4"
+    d.open()
+    
+    # Open another mp4 video in write-only
+    # and write all frames from input device
+    out = VipOutputDevice()
+    out.path = "C:/Users/VM213788/Desktop/test_lonnnnng.mp4"
+    out.set_property("threads", 8)
+    out.open()
+    for i in range(d.size):
+        d.read(d.pos_to_time(i))
+        out.inputs[0] = d.outputs[0]
+        out.apply()
+    out.close()
+    ```
     """
     def __init__(self):
         super().__init__(VipIODevice.ReadOnly)

@@ -288,6 +288,9 @@ class VIP_CORE_EXPORT VipPyWrapperIODevice : public VipIODevice
 	friend bool applyPyProcessing(Processing* _this);
 
 public:
+	// Internal use only
+	static void updateDeviceOutput(quint64 addr, const QString & name, int index);
+
 	VipPyWrapperIODevice(QObject* parent = nullptr);
 	~VipPyWrapperIODevice();
 
@@ -332,6 +335,7 @@ protected:
 private:
 	void addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type);
 	void setLastError();
+	void updateOutput(const QString& name, int index);
 	VIP_DECLARE_PRIVATE_DATA();
 };
 
