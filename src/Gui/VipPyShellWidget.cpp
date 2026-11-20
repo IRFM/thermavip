@@ -629,9 +629,11 @@ void VipIPythonHistory::updateContent()
 	if (auto s = d_data->shell) {
 		auto lines = s->historyFileLines(d_data->maxLines);
 		QString text = lines.join("\n");
+		int pos = this->verticalScrollBar()->value();
 		if (text != toPlainText()) {
 			this->clear();
 			this->insertPlainText(text);
+			this->verticalScrollBar()->setValue(pos);
 		}
 	}
 }
@@ -669,14 +671,6 @@ void VipIPythonHistory::execSelectedLines()
 		else
 			s->execLines(lines);
 	}
-}
-
-void VipIPythonHistory::keyPressEvent(QKeyEvent* evt)
-{
-	if (evt->key() == Qt::Key_Enter || evt->key() == Qt::Key_Return)
-		execSelectedLines();
-	else
-		evt->setAccepted(false);
 }
 
 class VipIPythonShellWidget::PrivateData
@@ -910,7 +904,6 @@ VipPyInterpreterToolWidget::VipPyInterpreterToolWidget(VipMainWindow* win)
 		if (d_data->ipythonShell) {
 			delete d_data->ipythonShell.data();
 			d_data->ipythonShell = nullptr;
-			
 		}
 		d_data->stdShell = new VipPyShellWidget();
 	}
@@ -1041,9 +1034,9 @@ bool VipPyInterpreterToolWidget::eventFilter(QObject*, QEvent* evt)
 		QKeyEvent* key = static_cast<QKeyEvent*>(evt);
 		if (key->key() == Qt::Key_Return || key->key() == Qt::Key_F5) {
 
-			d_data->shell->addLines(historySelectedLines());
+			d_data->shell->execLines(historySelectedLines());
 			shellWidget()->raise();
-			shellWidget()->setFocus();
+			shellEditor()->setFocus();
 			return true;
 		}
 	}

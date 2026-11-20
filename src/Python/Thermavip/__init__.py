@@ -171,6 +171,24 @@ VIDEO_PLAYER = 1 # a 2D player displaying an image or a video
 _2D_PLAYER = 2 # other type of 2D player
 OTHER_PLAYER = 3 # other type of player
 
+def log_info(text : str):
+    """
+    Log information to Thermavip
+    """
+    call_thermavip_fun('log_info',(text,))
+
+def log_warning(text : str):
+    """
+    Log warning to Thermavip
+    """
+    call_thermavip_fun('log_warning',(text,))
+
+def log_error(text : str):
+    """
+    Log error to Thermavip
+    """
+    call_thermavip_fun('log_error',(text,))
+
 def player_type(player):
     """
     Returns type of given player (one of PLOT_PLAYER, VIDEO_PLAYER, _2D_PLAYER, OTHER_PLAYER)

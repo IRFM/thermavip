@@ -11,6 +11,7 @@
 #include "VipProgress.h"
 #include "VipPlayWidget.h"
 #include "VipPythonManager.h"
+#include "VipLogging.h"
 
 #if VIP_WITH_VTK
 #include "VipVTKPlayer.h"
@@ -556,7 +557,7 @@ static QVariant destroy_progress(const QVariantList& lst, const QVariantMap& kwa
 	if (lst.size() != 1)
 		return error("invalid arguments number of arguments");
 
-	auto * p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
+	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
 	delete p;
 	return {};
 }
@@ -604,7 +605,6 @@ static QVariant progress_canceled(const QVariantList& lst, const QVariantMap& kw
 	auto* p = (VipProgress*)(uintptr_t)lst[0].toULongLong();
 	return p->canceled();
 }
-
 
 static QVariant closeWindow(int player)
 {
@@ -2025,7 +2025,6 @@ static QVariant add_tool_widget(const VipPyObjectPtr& widget, bool floating, int
 	return vipToVariant(VipPyObjectPtr(new VipPyObject(vipPythonFromQObject(tool))));
 }
 
-
 /* static QVariant addFunction(int player, PyObject* fun, const QString& fun_name, const QString& item_name)
 {
 	//find the player
@@ -2120,9 +2119,25 @@ static QVariant _can_load_qtpy()
 	return ret;
 }
 
-static QVariant _update_device_output(quint64 addr, const QString & name, int index)
+static QVariant _update_device_output(quint64 addr, const QString& name, int index)
 {
 	VipPyWrapperIODevice::updateDeviceOutput(addr, name, index);
+	return {};
+}
+
+static QVariant log_info(const QString& txt)
+{
+	VIP_LOG_INFO(txt);
+	return {};
+}
+static QVariant log_warning(const QString& txt)
+{
+	VIP_LOG_WARNING(txt);
+	return {};
+}
+static QVariant log_error(const QString& txt)
+{
+	VIP_LOG_ERROR(txt);
 	return {};
 }
 
@@ -2132,15 +2147,19 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(_can_load_qtpy, "_can_load_qtpy", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(_update_device_output, "_update_device_output", {}, false));
 
+	// Logging
+	vipRegisterFunction(vipMakeFunctionObject(log_info, "log_info", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(log_warning, "log_warning", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(log_error, "log_error", {}, false));
+
 	// VipProgress wrapper functions
-	vipRegisterFunction(make_progress, "make_progress",{},false);
+	vipRegisterFunction(make_progress, "make_progress", {}, false);
 	vipRegisterFunction(destroy_progress, "destroy_progress", {}, false);
 	vipRegisterFunction(progress_set_value, "progress_set_value", {}, false);
 	vipRegisterFunction(progress_value, "progress_value", {}, false);
 	vipRegisterFunction(progress_set_text, "progress_set_text", {}, false);
 	vipRegisterFunction(progress_text, "progress_text", {}, false);
 	vipRegisterFunction(progress_canceled, "progress_canceled", {}, false);
-
 
 	vipRegisterFunction(vipMakeFunctionObject(registerPyProcessing, "register_processing"));
 	vipRegisterFunction(vipMakeFunctionObject(playerType, "player_type"));

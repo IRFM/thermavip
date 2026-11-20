@@ -139,9 +139,6 @@ public Q_SLOTS:
 	void updateContent();
 	void updateContentIfVisible();
 
-protected:
-	virtual void keyPressEvent(QKeyEvent* evt);
-
 private:
 	VIP_DECLARE_PRIVATE_DATA();
 };
@@ -187,10 +184,6 @@ private Q_SLOTS:
 private:
 	VIP_DECLARE_PRIVATE_DATA();
 };
-
-
-
-
 
 /// @brief Internal Python interpreter shell.
 /// Use either a home made Python shell or an IPython one if Qt and jupyter notebook are installed.
