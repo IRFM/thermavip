@@ -1,6 +1,20 @@
 """Represent 2D shapes and organize them into named groups."""
 
 import numpy as np
+import builtins
+
+def __call_thermavip_fun(name, args = tuple(), kwargs={}):
+    """Dispatch name and the supplied arguments through
+    builtins.internal.call_internal_func.
+    """
+    args = (name,) + args
+    return builtins.internal.call_internal_func(*args, **kwargs)
+
+def call_thermavip_fun(name, args=tuple(), kwargs={}):
+    """Call a function registered with vipRegisterFunction and return its result. Pass
+    positional arguments as a tuple and keywords as a dictionary.
+    """
+    return __call_thermavip_fun(name, args, kwargs)
 
 
 class VipShape:
@@ -26,6 +40,12 @@ class VipShape:
     def __repr__(self):
         """Return the same multiline description as str(self)."""
         return self.__str__()
+
+    @staticmethod
+    def ellipse(left, top, width, height, attributes = {}):
+        """Create an elliptic shape from a bounding rectangle.
+        """
+        return call_thermavip_fun("create_ellipse",(left, top, width, height,attributes))
 
     @property
     def group(self):
@@ -100,6 +120,11 @@ class VipShape:
 
         The test uses exact coordinate equality and permits repeated vertices."""
         return len(self.points.shape) == 2 and self.points.shape[0] > 1 and bool((self.points[0] == self.points[-1] ).all())
+
+    def fill_pixels(self):
+        """Returns the pixels actually filled by this shape.
+        """
+        return call_thermavip_fun("fill_pixels", (self,))
 
 
 class VipSceneModel:

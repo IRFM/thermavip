@@ -108,7 +108,8 @@ VIP_CORE_EXPORT QVariant vipRetrievePythonVariable(const QString& name, VipPyLoc
 /// @brief GIL RAII locker class
 class VIP_CORE_EXPORT VipGILLocker
 {
-	bool state;
+	int state = 0;
+	friend class VipGILUnlocker;
 
 public:
 	VipGILLocker();
@@ -116,6 +117,21 @@ public:
 
 	VipGILLocker(const VipGILLocker&) = delete;
 	VipGILLocker& operator=(const VipGILLocker&) = delete;
+
+	static VipGILLocker* threadLocker();
+};
+
+/// @brief GIL RAII locker class
+class VIP_CORE_EXPORT VipGILUnlocker
+{
+	void* state = nullptr;
+
+public:
+	VipGILUnlocker();
+	~VipGILUnlocker();
+
+	VipGILUnlocker(const VipGILUnlocker&) = delete;
+	VipGILUnlocker& operator=(const VipGILUnlocker&) = delete;
 };
 
 struct compute_error_t
@@ -250,8 +266,19 @@ public:
 using VipPyObjectPtr = QSharedPointer<VipPyObject>;
 Q_DECLARE_METATYPE(VipPyObjectPtr)
 
+/// @brief Helper function, convert a VipPyObject to QVariant using an intermediate VipPyObjectPtr.
+inline QVariant vipToVariant(const VipPyObject& obj)
+{
+	return vipToVariant(VipPyObjectPtr(new VipPyObject(obj)));
+}
+/// @brief Returns true if given Python type inherits parent
+VIP_CORE_EXPORT bool vipPyIsSubclass(const VipPyObject& _class, const VipPyObject& parent);
+/// @brief Returns true if given Python type inherits VipIODevice
+VIP_CORE_EXPORT bool vipPyIsIODevice(const VipPyObject& _class);
+
 VIP_CORE_EXPORT VipPyObject vipPythonFromQObject(QObject* obj);
 VIP_CORE_EXPORT QObject* vipQObjectFromPython(const VipPyObject& obj);
+VIP_CORE_EXPORT QObject* vipQObjectFromPython(const QVariant& obj);
 
 
 /// @brief Convert Python object (of type Thermavip.VipAnyData) to VipAnyData. The GIL must be held.

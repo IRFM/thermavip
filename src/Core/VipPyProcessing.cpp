@@ -574,6 +574,9 @@ bool VipPyProcessing::setStdPyProcessingFile(const QString& proc_name)
 		       "  need_resampling = pr.needResampling()\n"
 		       "except Exception as e: pass";
 
+	// Unlock the GIL if necessary
+	VipGILUnlocker unlock;
+
 	VipPyError err = VipPyInterpreter::instance()->execCode(exec).value(5000).value<VipPyError>();
 	if (!err.isNull()) {
 		vip_debug("err: %s\n", err.traceback.toLatin1().data());
@@ -987,6 +990,37 @@ QVariant initializePyProcessing(Processing* _this, const QVariant& value)
 		}
 	}
 
+	// Import outputs
+	for (int i = 0; i < _this->topLevelOutputCount(); ++i) {
+		auto out = _this->topLevelOutputAt(i);
+		if (out->type() == VipProcessingIO::TypeOutput)
+			out->toOutput()->setData(vipAnyDataFromPython(d_data->object.callMember("get_io", QVariantList() << out->name()), _this));
+		else {
+			auto mout = out->toMultiOutput();
+			auto io = d_data->object.callMember("get_io", QVariantList() << out->name());
+			if (mout->count() != io.length()) {
+				_this->setLastError();
+				return false;
+			}
+			for (int j = 0; j < mout->count(); ++j)
+				mout->at(j)->setData(vipAnyDataFromPython(io.at(j), _this));
+		}
+	}
+
+	if (auto* dev = qobject_cast<VipPyWrapperIODevice*>(_this)) {
+		// For VipPyWrapperIODevice, set VipIODevice parameters
+		QString p = d_data->object.getMember("path").toVariant().toString();
+		dev->setPath(p);
+		int mode = d_data->object.getMember("open_mode").toVariant().toInt();
+		dev->setOpenMode((VipIODevice::OpenModes)mode);
+		auto size = d_data->object.getMember("size").toVariant().toLongLong();
+		dev->setSize(size);
+		dev->computeInternalValues();
+		if (mode == VipIODevice::ReadOnly)
+			// The device is already opened
+			add_device((uint64_t)(uintptr_t)dev->processingObject().pyObject(), dev);
+	}
+
 	return true;
 }
 
@@ -1242,6 +1276,11 @@ public:
 	QStringList inputs, multi_inputs, properties, multi_properties, outptus, multi_outputs;
 
 	bool useEventLoop = false;
+
+	VipIODevice::OpenModes supported_modes = VipIODevice::NotOpen;
+	QString filters;
+	VipIODevice::DeviceType device_type = VipIODevice::Resource;
+	VipTimeRangeList timeWindow;
 };
 
 VipPyWrapperIODevice::VipPyWrapperIODevice(QObject* parent)
@@ -1419,16 +1458,42 @@ bool VipPyWrapperIODevice::probe(const QString& filename, const QByteArray& firs
 }
 VipIODevice::OpenModes VipPyWrapperIODevice::supportedModes() const
 {
-	VipPyClearError clear;
-	VipGILLocker lock;
-	VipPyError::clear();
+	return d_data->supported_modes;
+}
+
+
+
+bool VipPyWrapperIODevice::computeInternalValues()
+{
 	auto mode = d_data->object.getMember("supported_modes").toVariant().toInt();
-	if (VipPyError err = VipPyError(compute_error_t{})) {
-		err.printDebug(std::cout);
-	}
+	if (VipPyError err = VipPyError(compute_error_t{})) 
+		return false;
 	if (mode > (int)(Append | ReadOnly | WriteOnly) || mode < 0)
-		return NotOpen;
-	return (OpenModes)mode;
+		return false;
+	d_data->supported_modes = (VipIODevice::OpenModes)mode;
+	d_data->filters = d_data->object.getMember("file_filters").toVariant().toString();
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return false;
+	d_data->device_type = (VipIODevice::DeviceType)d_data->object.getMember("device_type").toVariant().toInt();
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return false;
+	d_data->timeWindow.clear();
+	auto ret = d_data->object.callMember("time_window");
+	if (VipPyError err = VipPyError(compute_error_t{}))
+		return false;
+	const QVariantList lst = ret.toVariant().value<QVariantList>();
+	if (lst.size() == 2 && lst[0].canConvert<qint64>() && lst[1].canConvert<qint64>()) {
+		d_data->timeWindow.push_back(VipTimeRange(lst[0].toLongLong(), lst[1].toLongLong()));
+		return true;
+	}
+	
+	for (const QVariant& v : lst) {
+		const auto range = v.value<QVariantList>();
+		if (range.size() != 2)
+			return true;
+		d_data->timeWindow.push_back(VipTimeRange(range[0].toLongLong(), range[1].toLongLong()));
+	}
+	return true;
 }
 
 
@@ -1441,7 +1506,11 @@ bool VipPyWrapperIODevice::setPath(const QString& path)
 	QString p = removePrefix(path);
 	p.remove(d_data->info.classname + ":");
 
-	d_data->object.setMember("path", VipPyObject(vipVariantToPython(p), borrow_t{}));
+	QString current = d_data->object.getMember("path").toVariant().toString();
+	if (current != p)
+		// Set the path ONLY if different to not close a device already open
+		d_data->object.setMember("path", VipPyObject(vipVariantToPython(p), borrow_t{}));
+
 	if (!VipPyError(compute_error_t{})) {
 		return VipIODevice::setPath(path);
 	}
@@ -1507,6 +1576,11 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 		}
 	}
 
+	if (!computeInternalValues()) {
+		setLastError();
+		return false;
+	}
+
 	if (VipPyError err = VipPyError(compute_error_t{})) {
 		setLastError();
 		return false;
@@ -1521,13 +1595,7 @@ bool VipPyWrapperIODevice::open(VipIODevice::OpenModes mode)
 
 VipPyWrapperIODevice::DeviceType VipPyWrapperIODevice::deviceType() const
 {
-	VipPyClearError clear;
-	VipGILLocker lock;
-	VipPyError::clear();
-	auto type = d_data->object.getMember("device_type").toVariant().toInt();
-	if (type < 0 || type > Resource)
-		return Resource;
-	return (DeviceType)type;
+	return d_data->device_type;
 }
 
 void VipPyWrapperIODevice::close()
@@ -1542,11 +1610,7 @@ void VipPyWrapperIODevice::close()
 
 QString VipPyWrapperIODevice::fileFilters() const
 {
-	VipPyClearError clear;
-	VipGILLocker lock;
-	VipPyError::clear();
-	auto filters = d_data->object.getMember("file_filters").toVariant().toString();
-	return filters;
+	return d_data->filters;
 }
 
 qint64 VipPyWrapperIODevice::computeNextTime(qint64 time) const
@@ -1606,26 +1670,7 @@ qint64 VipPyWrapperIODevice::computeTimeToPos(qint64 time) const
 
 VipTimeRangeList VipPyWrapperIODevice::computeTimeWindow() const
 {
-	VipPyClearError clear;
-	VipGILLocker lock;
-	VipPyError::clear();
-	auto ret = d_data->object.callMember("time_window");
-	if (VipPyError err = VipPyError(compute_error_t{}))
-		return {};
-	const QVariantList lst = ret.toVariant().value<QVariantList>();
-	if (lst.size() == 2 && lst[0].canConvert<qint64>() && lst[1].canConvert<qint64>()) {
-		VipTimeRangeList win;
-		win.push_back(VipTimeRange(lst[0].toLongLong(), lst[1].toLongLong()));
-		return win;
-	}
-	VipTimeRangeList win;
-	for (const QVariant& v : lst) {
-		const auto range = v.value<QVariantList>();
-		if (range.size() != 2)
-			return win;
-		win.push_back(VipTimeRange(range[0].toLongLong(), range[1].toLongLong()));
-	}
-	return win;
+	return d_data->timeWindow;
 }
 
 bool VipPyWrapperIODevice::enableStreaming(bool enable)

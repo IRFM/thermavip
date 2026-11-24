@@ -241,8 +241,6 @@ void* vipAnyDataToPython(const VipAnyData& any)
 	return pyAnyDataType().callMember("__call__", QVariantList(), kwargs).release();
 }
 
-
-
 VipShape vipShapeFromPython(const VipPyObject& obj)
 {
 	VipShape ret;
@@ -324,6 +322,23 @@ static VipPointVector vipPointVectorFromPython(const VipPyObject& obj)
 	const auto x = obj.getMember("x").toVariant().value<VipNDArray>();
 	const auto y = obj.getMember("y").toVariant().value<VipNDArray>();
 	return vipCreatePointVector(x, y);
+}
+
+static void* vipPointVectorToPython(const VipPointVector& obj)
+{
+	VipNDArrayType<double> x(vipVector(obj.size()));
+	VipNDArrayType<double> y(vipVector(obj.size()));
+	double* _x = x.data();
+	double* _y = y.data();
+	for (qsizetype i = 0; i < obj.size(); ++i) {
+		_x[i] = obj[i].x();
+		_y[i] = obj[i].y();
+	}
+	auto * ret = pyPointVectorType().callMember("__call__", QVariantList() << vipToVariant(VipNDArray(x)) << vipToVariant(VipNDArray(y))).release();
+	if (!ret) {
+		vip_debug("%s\n", VipPyError(compute_error_t{}).toString().toLatin1().data());
+	}
+	return ret;
 }
 
 static VipIntervalSampleVector vipIntervalSampleVectorFromPython(const VipPyObject& obj)
@@ -500,8 +515,6 @@ struct AllowVipPyObject
 	}
 };
 
-
-
 QVariant vipPythonToVariant(const void* pyobject, bool allowVipPyObject)
 {
 	try {
@@ -560,17 +573,19 @@ void* vipVariantToPython(const QVariant& variant)
 				Py_RETURN_NONE;
 			}
 			PyObject* obj = (PyObject*)ptr->pyObject();
+			if (!obj)
+				Py_RETURN_NONE;
 			Py_INCREF(obj);
 			return obj;
 		}
 
-		if (variant.userType() == qMetaTypeId<VipAnyData>()) 
+		if (variant.userType() == qMetaTypeId<VipAnyData>())
 			return vipAnyDataToPython(variant.value<VipAnyData>());
 
-		if (variant.userType() == qMetaTypeId<VipShape>()) 
+		if (variant.userType() == qMetaTypeId<VipShape>())
 			return vipShapeToPython(variant.value<VipShape>());
 
-		if (variant.userType() == qMetaTypeId<VipSceneModel>()) 
+		if (variant.userType() == qMetaTypeId<VipSceneModel>())
 			return vipSceneModelToPython(variant.value<VipSceneModel>());
 
 		if (QObject* obj = variant.value<QObject*>()) {
@@ -709,7 +724,8 @@ static QVariant stdToVariant(void* pyobject)
 		res = QVariant::fromValue(value);
 	}
 #ifdef VIP_WITH_VTK
-	else if (PyObject* obj = PyObject_GetAttrString(res_object, "__vtk__")) {
+	else if (PyObject_HasAttrString(res_object, "__vtk__")) {
+		PyObject* obj = PyObject_GetAttrString(res_object, "__vtk__");
 		PyObject* arglist = Py_BuildValue("()");
 		PyObject* result = PyObject_Call(obj, arglist, nullptr);
 		Py_DECREF(arglist);
@@ -726,7 +742,8 @@ static QVariant stdToVariant(void* pyobject)
 			Py_DECREF(result);
 		}
 	}
-	else if (PyObject* obj = PyObject_GetAttrString(res_object, "__vtkname__")) {
+	else if (PyObject_HasAttrString(res_object, "__vtkname__")) {
+		PyObject* obj = PyObject_GetAttrString(res_object, "__vtkname__");
 		vtkObjectBase* ptr = ((PyVTKObject*)res_object)->vtk_ptr;
 		if (ptr->IsA("vtkDataObject")) {
 #ifdef NDEBUG
@@ -746,7 +763,6 @@ static QVariant stdToVariant(void* pyobject)
 			Py_DECREF(new_object);
 		}
 	}
-
 	return res;
 }
 
@@ -832,13 +848,7 @@ static void* stdToPython(const QVariant& obj)
 		}
 		else if (obj.userType() == qMetaTypeId<VipPointVector>()) {
 			const VipPointVector vec = obj.value<VipPointVector>();
-			// array of 2 rows (x and y)
-			VipNDArrayType<vip_double> ar(vipVector(2, vec.size()));
-			for (qsizetype i = 0; i < vec.size(); ++i) {
-				ar(vipVector(0, i)) = vec[i].x();
-				ar(vipVector(1, i)) = vec[i].y();
-			}
-			obj_object = (PyObject*)vipVariantToPython(QVariant::fromValue(VipNDArray(ar)));
+			obj_object = (PyObject*)vipPointVectorToPython(vec);
 		}
 		else if (obj.userType() == qMetaTypeId<VipComplexPointVector>()) {
 			const VipComplexPointVector vec = obj.value<VipComplexPointVector>();
@@ -1346,6 +1356,17 @@ VipPyObject VipPyObject::import(const QString& module)
 	return VipPyObject(PyImport_ImportModule(module.toLatin1().data()), borrow_t{});
 }
 
+bool vipPyIsSubclass(const VipPyObject& _class, const VipPyObject& parent)
+{
+	auto issubclass = VipPyObject::eval("issubclass");
+	return (issubclass.callMember("__call__", QVariantList() << vipToVariant(_class) << vipToVariant(parent)).toVariant().toBool());
+}
+bool vipPyIsIODevice(const VipPyObject& _class)
+{
+	auto typeIODevice = importIODevice().getMember("VipIODevice");
+	return vipPyIsSubclass(_class, typeIODevice);
+}
+
 VipPyObject vipPythonFromQObject(QObject* obj)
 {
 	VipGILLocker lock;
@@ -1367,6 +1388,14 @@ VipPyObject vipPythonFromQObject(QObject* obj)
 		return {};
 	}
 	return qobject_from_address.callMember("__call__", QVariantList() << vipToVariant((std::uint64_t)(std::uintptr_t)obj));
+}
+
+QObject* vipQObjectFromPython(const QVariant& obj)
+{
+	VipPyObjectPtr ptr = obj.value<VipPyObjectPtr>();
+	if (!ptr || !*(ptr))
+		return nullptr;
+	return vipQObjectFromPython(*ptr);
 }
 
 QObject* vipQObjectFromPython(const VipPyObject& obj)
@@ -1610,6 +1639,7 @@ static QVariant execDelayFunction(const T& fun)
 
 static QVariant callRegisteredFunction(const VipFunctionObject& fun, const QVariantList& args, const QVariantMap& kwargs)
 {
+	VipGILLocker lock;
 	return fun.function(args, kwargs);
 }
 static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
@@ -1626,7 +1656,7 @@ static PyObject* callRegisteredFun(PyObject*, PyObject* args, PyObject* kwargs)
 		return nullptr;
 	}
 
-	if (obj.mainThread) {
+	if (obj.mainThread && QThread::currentThread() != QCoreApplication::instance()->thread()) {
 
 		Py_BEGIN_ALLOW_THREADS result = execDelayFunction([&obj, lst, map]() { return callRegisteredFunction(obj, lst, map); });
 		Py_END_ALLOW_THREADS
@@ -1962,8 +1992,6 @@ public:
 		pythonInit = true;
 		vip_debug("Python initialized\n");
 
-
-
 #ifdef _MSC_VER
 #pragma warning(pop)
 #elif defined(__GNUC__)
@@ -2014,24 +2042,58 @@ void vipPythonInitialize()
 	PythonInit::instance();
 }
 
+static VipGILLocker*& pyThreadLocker()
+{
+	thread_local VipGILLocker* inst = nullptr;
+	return inst;
+}
+
 // Global Interpreter Locker mechanism
 VipGILLocker::VipGILLocker()
-  : state(PyGILState_Check())
+//: state(PyGILState_Check())
 {
 	// create the PyThreadState for this thread if it does not exist
-	if (!PyGILState_GetThisThreadState())
+	/* if (!PyGILState_GetThisThreadState())
 		PyThreadState_New(PythonInit::instance()->interpreterState);
 
 	// lock the thread if not already locked
 	if (!state)
-		PyEval_RestoreThread(PyGILState_GetThisThreadState());
+		PyEval_RestoreThread(PyGILState_GetThisThreadState());*/
+
+	state = PyGILState_Ensure();
+	if (state == PyGILState_UNLOCKED)
+		pyThreadLocker() = this;
 }
 
 VipGILLocker::~VipGILLocker()
 {
 	// release GIL if previously locked
-	if (!state)
-		PyEval_SaveThread();
+	/* if (!state)
+		PyEval_SaveThread();*/
+
+	PyGILState_Release((PyGILState_STATE)state);
+	if (state == PyGILState_UNLOCKED)
+		pyThreadLocker() = nullptr;
+}
+
+VipGILLocker* VipGILLocker::threadLocker()
+{
+	return pyThreadLocker();
+}
+
+VipGILUnlocker::VipGILUnlocker()
+{
+#if PY_VERSION_HEX >= 0x03130000
+	if (PyThreadState_GetUnchecked())
+#else
+	if( _PyThreadState_UncheckedGet())
+#endif
+		state = (PyEval_SaveThread());
+}
+VipGILUnlocker::~VipGILUnlocker()
+{
+	if(state)
+		PyEval_RestoreThread((PyThreadState*)state);
 }
 
 VipNDArray vipFromNumpyArray(void* obj)

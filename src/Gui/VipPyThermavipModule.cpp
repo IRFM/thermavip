@@ -15,6 +15,7 @@
 
 #if VIP_WITH_VTK
 #include "VipVTKPlayer.h"
+#include "VipVTKGraphicsView.h"
 #endif
 
 #include <functional>
@@ -40,6 +41,49 @@ static QVariant registerPyProcessing(const QVariant& value)
 		return {};
 	}
 	return error("Unable to register Python processing class: invalid argument");
+}
+
+static int workspaceId(VipDisplayPlayerArea* w)
+{
+	int ret = w->id();
+	// Combine with pointer hash
+	size_t wh = vipHashValue((uintptr_t)w) & ((1ull << 15ull) - 1ull);
+	return (ret & ((1 << 16) - 1)) | ((int)wh << 16);
+}
+
+static VipDisplayPlayerArea* findWorkspace(int id)
+{
+	id = id & ((1 << 16) - 1);
+	auto* disp = vipGetMainWindow()->displayArea();
+	for (int i = 0; i < disp->count(); ++i)
+		if (disp->widget(i)->id() == id)
+			return disp->widget(i);
+	return nullptr;
+}
+
+static int playerId(QWidget* w)
+{
+	w = qobject_cast<VipDragWidget*>(VipBaseDragWidget::fromChild(w));
+	if (!w)
+		return 0;
+	int ret = VipUniqueId::id(static_cast<VipBaseDragWidget*>(w));
+	// Combine with pointer hash
+	size_t wh = vipHashValue((uintptr_t)w) & ((1ull << 15ull) - 1ull);
+	return (ret & ((1 << 16) - 1)) | ((int)wh << 16);
+}
+
+static VipDragWidget* findDragWidget(int id)
+{
+	id = id & ((1 << 16) - 1);
+	return qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(id));
+}
+
+static VipAbstractPlayer* findPlayer(int id)
+{
+	auto* w = findDragWidget(id);
+	if (!w)
+		return nullptr;
+	return qobject_cast<VipAbstractPlayer*>(w->widget());
 }
 
 static QVariant userInput(const QString& title, const QVariantList& values)
@@ -187,24 +231,50 @@ static QVariant queryPulseOrDate(const QString& title, const QString& default_va
 
 static QVariant workspaceTitle(int id)
 {
-	for (int i = 0; i < vipGetMainWindow()->displayArea()->count(); ++i) {
-		if (vipGetMainWindow()->displayArea()->widget(i)->id() == id) {
-			return (vipGetMainWindow()->displayArea()->widget(i)->windowTitle());
-		}
-	}
-
-	return error("wrong workspace id");
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	return wks->windowTitle();
 }
 
 static QVariant setWorkspaceTitle(int id, const QString& title)
 {
-	for (int i = 0; i < vipGetMainWindow()->displayArea()->count(); ++i) {
-		if (vipGetMainWindow()->displayArea()->widget(i)->id() == id) {
-			vipGetMainWindow()->displayArea()->widget(i)->setWindowTitle(title);
-			return QVariant();
-		}
-	}
-	return error("wrong workspace id");
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	wks->setWindowTitle(title);
+	return {};
+}
+
+static QVariant workspace_floating(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	return wks->isFloating();
+}
+
+static QVariant set_workspace_floating(int id, bool enable)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	wks->setFloating(enable);
+	return workspaceId(wks);
+}
+
+
+static QVariant setWorkspaceMaxColumns(int cols)
+{
+	if (cols < 1)
+		return error("invalid column count");
+	VipDisplayPlayerArea::setDefaultMaximumWidth(cols);
+	return {};
+}
+
+static QVariant workspaceMaxColumns()
+{
+	return VipDisplayPlayerArea::defaultMaximumWidth();
 }
 
 template<class T>
@@ -258,6 +328,90 @@ static VipAnyResource* findAnyResource(VipAbstractPlayer* pl, const QString name
 	return nullptr;
 }
 
+static QVariant createDevice(const QVariant& p)
+{
+	if (p.userType() == qMetaTypeId<VipPyObjectPtr>()) {
+		// We accept VipIODevice
+		VipPyObjectPtr ptr = p.value<VipPyObjectPtr>();
+		if (!ptr || !(*ptr))
+			return error("invalid or null object passed");
+
+		VipPyObject obj = *ptr;
+		auto objType = obj.type();
+		// VipGILLocker ll;
+		if (vipPyIsIODevice(objType)) {
+			// This is a VipIODevice
+			VipPyWrapperIODevice* d = new VipPyWrapperIODevice();
+			if (!d->initializeProcessing(vipToVariant(obj)).toBool()) {
+				delete d;
+				return error("unable to create device");
+			}
+			return vipToVariant(d);
+		}
+	}
+	return {};
+}
+
+static QVariant handleShapes(const VipAnyData& any, VipPlayer2D* player = nullptr, int canvas = 0)
+{
+	auto* plot = qobject_cast<VipPlotPlayer*>(player);
+	auto* target = plot ? plot->canvas(canvas) : nullptr;
+
+	if (any.data().userType() == qMetaTypeId<VipShape>()) {
+		// Open a shape within default video scene model (ROIs)
+		VipShape sh = any.data().value<VipShape>();
+		if (sh.type() == VipShape::Point)
+			sh.setGroup("Points");
+		else if (sh.type() == VipShape::Polyline)
+			sh.setGroup("Polylines");
+		else
+			sh.setGroup("ROI");
+		if (player) {
+			if (plot) {
+				plot->canvas(canvas);
+				VipAbstractScale* sc = plot->leftScales()[canvas];
+				if (auto* model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc))
+					model->sceneModel().add(sh);
+				else
+					return error("unable to find scene model for given canvas index");
+			}
+			else
+				player->plotSceneModel()->sceneModel().add(sh);
+			return vipToVariant(player);
+		}
+		else {
+			auto lst = vipCreatePlayersFromData(any, nullptr);
+			if (lst.isEmpty())
+				return error("unable to open VipShape object");
+			return vipToVariant(lst.first());
+		}
+	}
+	if (any.data().userType() == qMetaTypeId<VipSceneModel>()) {
+		// Open a scene model with a device
+		if (player) {
+			auto* dev = findAnyResource(player, any.name());
+			if (!dev || dev->data().userType() != qMetaTypeId<VipSceneModel>()) {
+				dev = new VipAnyResource();
+				dev->setAnyData(any);
+				if (vipCreatePlayersFromProcessing(dev, player, nullptr, target).isEmpty()) {
+					delete dev;
+					return error("unable to open device on video player");
+				}
+			}
+			else
+				dev->setAnyData(any);
+			return vipToVariant(player);
+		}
+		else {
+			auto lst = vipCreatePlayersFromData(any, nullptr);
+			if (lst.isEmpty())
+				return error("unable to open VipSceneModel object");
+			return vipToVariant(lst.first());
+		}
+	}
+	return {};
+}
+
 static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // const QVariant& p, int player = 0, const QString& side = QString())
 {
 	VipDragWidget* w = nullptr;
@@ -271,7 +425,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 	}
 
 	if (data_or_path.isEmpty())
-		return error("empty data");
+		return error("empty input data");
 
 	// Check for string, in which case we should display a progress widget
 	std::unique_ptr<VipProgress> progress;
@@ -320,6 +474,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 	}
 
 	int player = getArg<int>(kwargs, "player");
+	int canvas = getArg<int>(kwargs, "canvas");
 	QString side = getArg<QString>(kwargs, "side");
 
 	// Check player and side
@@ -327,7 +482,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 		return error("a side was given with an empty player id");
 
 	if (player) {
-		w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
+		w = findDragWidget(player);
 
 		// Check player id validity
 		if (!w)
@@ -348,13 +503,32 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 						}
 
 						const auto& p = data_or_path[i];
-
+						auto d = createDevice(p);
+						if (auto* dev = d.value<VipIODevice*>()) {
+							if (vipCreatePlayersFromProcessing(dev, vtk).isEmpty()) {
+								delete dev;
+								return error("unable to open device on VTK player");
+							}
+							continue;
+						}
+						if (d.userType() != 0)
+							return d;
 						if (p.userType() == QMetaType::QString) {
 							if (vipCreatePlayersFromPaths(VipPathList() << p.toString(), vtk).isEmpty())
 								return error("unable to open path into VTK player");
 						}
 						else {
+							if (QObject* obj = vipQObjectFromPython(p)) {
+								return error("cannot open widget in existing player");
+							}
+
 							VipAnyData any = toAnyData(p, kwargs);
+							auto ret = handleShapes(any, vtk);
+							if (ret.value<VipVideoPlayer*>())
+								continue;
+							if (ret.userType() != 0)
+								return ret;
+
 							VipVTKObject vtkobj = any.data().value<VipVTKObject>();
 							if (!vtkobj)
 								return error("VTK player only accepts paths or VTK objects");
@@ -378,20 +552,49 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 #endif
 
 				// Video player
+				for (qsizetype i = 0; i < data_or_path.size(); ++i) {
+					if (progress) {
+						progress->setValue(i);
+						if (progress->canceled())
+							return player;
+					}
 
-				if (data_or_path.size() != 1)
-					return error("video player only accept one data to display");
+					const auto& p = data_or_path[i];
 
-				const auto& p = data_or_path.first();
-				if (p.userType() == QMetaType::QString)
-					return error("cannot open path into an existing video player");
-				if (p.userType() != qMetaTypeId<VipAnyData>())
-					return error("cannot open given data into video player");
-				auto* d = findAnyResource(video, {});
-				if (!d)
-					return error("cannot open image into existing video player");
-				d->setAnyData(toAnyData(p, kwargs));
+					auto d = createDevice(p);
+					if (auto* dev = d.value<VipIODevice*>()) {
+						if (vipCreatePlayersFromProcessing(dev, video).isEmpty()) {
+							delete dev;
+							return error("unable to open device on video player");
+						}
+						continue;
+					}
+					if (d.userType() != 0)
+						return d;
+					if (p.userType() == QMetaType::QString) {
+						if (vipCreatePlayersFromPaths(VipPathList() << p.toString(), video).isEmpty())
+							return error("unable to open path into video player");
+						else
+							continue;
+					}
 
+					if (QObject* obj = vipQObjectFromPython(p))
+						return error("cannot open widget in existing player");
+
+					auto any = toAnyData(p, kwargs);
+					auto ret = handleShapes(any, video);
+					if (ret.value<VipVideoPlayer*>())
+						continue;
+					if (ret.userType() != 0)
+						return ret;
+
+					if (any.data().userType() != qMetaTypeId<VipNDArray>())
+						return error("cannot open given data into video player");
+					auto* dev = findAnyResource(video, {});
+					if (!dev)
+						return error("cannot open image into existing video player");
+					dev->setAnyData(toAnyData(p, kwargs));
+				}
 				return player;
 			}
 
@@ -406,12 +609,32 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 
 					const auto& p = data_or_path[i];
 
+					auto d = createDevice(p);
+					if (auto* dev = d.value<VipIODevice*>()) {
+						if (vipCreatePlayersFromProcessing(dev, plot, nullptr, plot->canvas(canvas)).isEmpty()) {
+							delete dev;
+							return error("unable to open device on plot player");
+						}
+						continue;
+					}
+					if (d.userType() != 0)
+						return d;
+					if (QObject* obj = vipQObjectFromPython(p)) {
+						return error("cannot open widget in existing player");
+					}
 					if (p.userType() == QMetaType::QString) {
-						if (vipCreatePlayersFromPaths(VipPathList() << p.toString(), plot).isEmpty())
+						if (vipCreatePlayersFromPaths(VipPathList() << p.toString(), plot, plot->canvas(canvas)).isEmpty())
 							return error("unable to open path into plot player");
 					}
 					else {
 						VipAnyData any = toAnyData(p, kwargs);
+
+						auto ret = handleShapes(any, plot, canvas);
+						if (ret.value<VipPlotPlayer*>())
+							continue;
+						if (ret.userType() != 0)
+							return ret;
+
 						int type = any.data().userType();
 						if (!(type == qMetaTypeId<VipPointVector>() || type == qMetaTypeId<VipIntervalSampleVector>()))
 							return error("unsupported data for plot player");
@@ -420,10 +643,10 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 							res->setAnyData(any);
 						else {
 							// Create
-							VipAnyResource* d = new VipAnyResource();
-							d->setAnyData(any);
-							if (vipCreatePlayersFromProcessing(d, plot).isEmpty()) {
-								delete d;
+							VipAnyResource* dev = new VipAnyResource();
+							dev->setAnyData(any);
+							if (vipCreatePlayersFromProcessing(dev, plot, nullptr, plot->canvas(canvas)).isEmpty()) {
+								delete dev;
 								return error("unable to open data into existing plot player");
 							}
 						}
@@ -482,7 +705,32 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 				return error("unable to create player from path");
 			}
 			new_player = lst.first();
+			continue;
 		}
+		if (QObject* obj = vipQObjectFromPython(p)) {
+			if (QWidget* w = qobject_cast<QWidget*>(obj)) {
+				if (new_player)
+					return error("cannot open widget in existing player");
+				VipWidgetPlayer* pl = new VipWidgetPlayer(w);
+				new_player = pl;
+				continue;
+			}
+			else
+				return error("cannot open non widget QObject");
+		}
+		auto d = createDevice(p);
+		if (auto* dev = d.value<VipIODevice*>()) {
+			auto lst = vipCreatePlayersFromProcessing(dev, new_player);
+			if (lst.size() != 1) {
+				qDeleteAll(lst);
+				delete dev;
+				return error("unable to create player from data");
+			}
+			new_player = lst.first();
+			continue;
+		}
+		if (d.userType() != 0)
+			return d;
 		else {
 			auto any = toAnyData(p, kwargs);
 			auto* d = new VipAnyResource();
@@ -494,6 +742,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 				return error("unable to create player from data");
 			}
 			new_player = lst.first();
+			continue;
 		}
 	}
 
@@ -519,7 +768,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 		// Open anywhere
 		vipGetMainWindow()->openPlayers(AbstractPlayerList() << new_player);
 	}
-	return QVariant(VipUniqueId::id(VipDragWidget::fromChild(new_player)));
+	return playerId(new_player);
 }
 
 static QVariant make_progress(const QVariantList& lst, const QVariantMap& kwargs)
@@ -608,44 +857,72 @@ static QVariant progress_canceled(const QVariantList& lst, const QVariantMap& kw
 
 static QVariant closeWindow(int player)
 {
-	VipBaseDragWidget* w = (VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error("Cannot find window number " + QString::number(player));
-	}
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
+
 	w->close();
 	return QVariant();
 }
 
-static QVariant setTimeMarkers(qint64 start, qint64 end)
+static QVariant setCurrentPlayer(int player)
 {
-	if (VipDisplayPlayerArea* a = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-		a->processingPool()->setTimeLimitsEnable(true);
-		a->processingPool()->setStopBeginTime(start);
-		a->processingPool()->setStopEndTime(end);
-		return QVariant();
-	}
-	else
-		return error("Cannot find a valid workspace");
-}
-static QVariant removeTimeMarkers()
-{
-	if (VipDisplayPlayerArea* a = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-		a->processingPool()->setTimeLimitsEnable(false);
-		return QVariant();
-	}
-	else
-		return error("Cannot find a valid workspace");
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
+
+	VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(w);
+	if (!a)
+		return error("Cannot find window number " + QString::number(player));
+
+	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(a);
+	w->setFocusWidget();
+	return {};
 }
 
-static QVariant setRowRatio(int row, double ratio)
+static QVariant playerWorkspace(int player)
 {
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
+	VipDisplayPlayerArea* a = VipDisplayPlayerArea::fromChild(w);
+	if (!a)
+		return error("invalid player id");
+	return workspaceId(a);
+}
+
+static QVariant setTimeMarkers(int id, qint64 start, qint64 end)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+
+	wks->processingPool()->setTimeLimitsEnable(true);
+	wks->processingPool()->setStopBeginTime(start);
+	wks->processingPool()->setStopEndTime(end);
+	return {};
+}
+static QVariant removeTimeMarkers(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	wks->processingPool()->setTimeLimitsEnable(false);
+	return {};
+}
+
+static QVariant setRowRatio(int id, int row, double ratio)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
 	if (ratio < 0 || ratio > 1) {
 		return error("wrong ratio value");
 	}
-	if (VipDisplayPlayerArea* a = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()) {
-		int height = a->dragWidgetArea()->height();
+	if (wks) {
+		int height = wks->dragWidgetArea()->height();
 		int new_height = height * ratio;
-		if (VipMultiDragWidget* mw = a->dragWidgetArea()->findChild<VipMultiDragWidget*>()) {
+		if (VipMultiDragWidget* mw = wks->dragWidgetArea()->findChild<VipMultiDragWidget*>()) {
 			QSplitter* vsplitter = mw->mainSplitter();
 			if (row >= 0 && row < vsplitter->count()) {
 				int current_h = vsplitter->widget(row)->height();
@@ -685,68 +962,199 @@ static QVariant setRowRatio(int row, double ratio)
 
 static QVariant showMaximized(int player)
 {
-	VipBaseDragWidget* w = (VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error("Cannot find window number " + QString::number(player));
-	}
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
 	w->showMaximized();
 	return QVariant();
 }
 static QVariant showNormal(int player)
 {
-	VipBaseDragWidget* w = (VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error("Cannot find window number " + QString::number(player));
-	}
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
 	w->showNormal();
 	return QVariant();
 }
 static QVariant showMinimized(int player)
 {
-	VipBaseDragWidget* w = (VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error("Cannot find window number " + QString::number(player));
-	}
+	auto* w = findDragWidget(player);
+	if (!w)
+		return error("invalid player id");
 	w->showMinimized();
 	return QVariant();
 }
 
-static QVariant _workspace(int wks)
+static QVariant closeWorkspace(int id)
 {
-	if (wks == 0) {
-		VipDisplayPlayerArea* area = new VipDisplayPlayerArea();
-		vipGetMainWindow()->displayArea()->addWidget(area);
-		return QVariant(area->id());
-	}
-
-	for (int i = 0; i < vipGetMainWindow()->displayArea()->count(); ++i) {
-		if (vipGetMainWindow()->displayArea()->widget(i)->id() == wks) {
-			vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(vipGetMainWindow()->displayArea()->widget(i));
-			return QVariant(vipGetMainWindow()->displayArea()->widget(i)->id());
-		}
-	}
-	return error("Cannot find workspace number " + QString::number(wks));
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	wks->close();
+	return {};
 }
 
-typedef QList<qint64> IntegerList;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-Q_DECLARE_METATYPE(IntegerList)
-#endif
+static QVariant workspacePlayers(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+
+	auto lst = wks->findChildren<VipDragWidget*>();
+	QVariantList ret;
+	for (auto* w : lst)
+		ret.push_back(playerId(w));
+	return vipToVariant(ret);
+}
+
+static QVariant _workspace(int id)
+{
+	if (id == 0) {
+		VipDisplayPlayerArea* area = new VipDisplayPlayerArea();
+		vipGetMainWindow()->displayArea()->addWidget(area);
+		return workspaceId(area);
+	}
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+
+	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(wks);
+	return workspaceId(wks);
+}
+
+static QVariant workspace_pos(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	return vipGetMainWindow()->displayArea()->displayTabWidget()->indexOf(wks);
+}
+static QVariant set_workspace_pos(int id, int pos)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	auto* tab = vipGetMainWindow()->displayArea()->displayTabWidget();
+	int idx = tab->indexOf(wks);
+	if (pos < 0)
+		pos = 0;
+	else if (pos >= tab->count()-1)
+		pos = tab->count() - 2;
+	tab->tabBar()->moveTab(idx, pos);
+	return {};
+}
+
+#include "VipXmlArchive.h"
+
+static QVariant workspace_as_session(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+
+	vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(wks);
+
+	VipXOStringArchive arch;
+	vipGetMainWindow()->saveSession(arch, (VipMainWindow::SessionType)VipMainWindow::CurrentArea, VipMainWindow::All);
+	return arch.toString();
+}
+
+static QVariant workspace_as_image(int id)
+{
+	auto* area = findWorkspace(id);
+	if (!area)
+		return error("invalid workspace id");
+	// vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
+
+	QImage img;
+
+	VipMultiDragWidget* mdrag = area->mainDragWidget(nullptr, false);
+	if (!mdrag) {
+		img = QImage(area->width(), area->height(), QImage::Format_ARGB32);
+		img.fill(QColor(255, 255, 255));
+	}
+	else {
+
+		VipRenderState state;
+		VipRenderObject::startRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+
+		vipProcessEvents();
+
+		QPixmap pixmap(/*area->dragWidgetArea()->viewport()->size()*/ mdrag->size());
+		pixmap.fill(QColor(255, 255, 255));
+
+		{
+			QPainter p(&pixmap);
+			p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+			VipRenderObject::renderObject(/*area->dragWidgetArea()->widget()*/ mdrag, &p, QPoint(), true, false);
+
+			VipRenderObject::endRender(/*area->dragWidgetArea()->widget()*/ mdrag, state);
+		}
+
+		pixmap = vipRemoveColoredBorder(pixmap, QColor(255, 255, 255));
+		VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
+		img = pixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+	}
+
+	return vipToVariant(VipNDArray(img.bits(), qMetaTypeId<VipRGB>(), vipVector(img.height(), img.width())));
+}
+
+static QVariant workspace_orientation(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	wks->mainDragWidget()->orientation() == Qt::Vertical ? 0 : 1;
+	return {};
+}
+
+static QVariant set_workspace_orientation(int id, int o)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	if (o < 0 || o > 1)
+		return error("invalid orientation");
+	wks->mainDragWidget()->setOrientation(o == 0 ? Qt::Vertical : Qt::Horizontal);
+	return {};
+}
+
+static QVariant workspace_left_tool_bar(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	auto* ret = wks->leftTabWidget();
+	if (!ret)
+		wks->setLeftTabWidget(ret = new QToolBar());
+	return vipToVariant(ret);
+}
+
+static QVariant workspace_right_tool_bar(int id)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	auto* ret = wks->rightTabWidget();
+	if (!ret)
+		wks->setRightTabWidget(ret = new QToolBar());
+	return vipToVariant(ret);
+}
 
 static QVariant _workspaces()
 {
-	qRegisterMetaType<IntegerList>();
-	IntegerList res;
+	QVariantList res;
 	for (int i = 0; i < vipGetMainWindow()->displayArea()->count(); ++i)
-		res.append(vipGetMainWindow()->displayArea()->widget(i)->id());
-	return QVariant::fromValue(res);
+		res.append(workspaceId(vipGetMainWindow()->displayArea()->widget(i)));
+	return vipToVariant(res);
 }
 
 static QVariant currentWorkspace()
 {
-	if (vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return QVariant(vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->id());
-	return QVariant(0);
+	if (auto* wks = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
+		return workspaceId(wks);
+	return 0;
 }
 
 static void resizeSplitter(QSplitter* splitter)
@@ -757,12 +1165,13 @@ static void resizeSplitter(QSplitter* splitter)
 	splitter->setSizes(sizes);
 	splitter->setOpaqueResize(true);
 }
-static QVariant resize_rows_columns()
+static QVariant resize_rows_columns(int id)
 {
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
 
-	if (VipMultiDragWidget* m = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->mainDragWidget()) {
+	if (VipMultiDragWidget* m = wks->mainDragWidget()) {
 		resizeSplitter(m->mainSplitter());
 		for (int i = 0; i < m->mainCount(); ++i)
 			resizeSplitter(m->subSplitter(i));
@@ -770,19 +1179,29 @@ static QVariant resize_rows_columns()
 	return QVariant();
 }
 
-static QVariant currentTime()
+static QVariant workspace_widget(int id)
 {
-	if (vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return QVariant(vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->time());
-	return error("no valid workspace selected");
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	return vipToVariant(wks);
 }
 
-static QVariant setCurrentTime(qint64 time, const QString& type = "absolute")
+static QVariant currentTime(int id)
 {
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	return wks->processingPool()->time();
+}
 
-	VipProcessingPool* pool = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool();
+static QVariant setCurrentTime(int id, qint64 time, const QString& type = "absolute")
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+
+	VipProcessingPool* pool = wks->processingPool();
 
 	if (type.compare("relative") == 0)
 		time += pool->firstTime();
@@ -793,111 +1212,68 @@ static QVariant setCurrentTime(qint64 time, const QString& type = "absolute")
 	for (int i = 0; i < objects.size(); ++i)
 		if (objects[i])
 			objects[i]->wait();
-	// return next time
-	return QVariant(pool->nextTime(pool->time()));
+	// return time
+	return QVariant((pool->time()));
 }
 
-static QVariant firstTime(qint64 time)
+static QVariant firstTime(int id, qint64 time)
 {
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	qint64 res = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->firstTime();
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	qint64 res = wks->processingPool()->firstTime();
 	return QVariant::fromValue(res);
 }
-static QVariant lastTime(qint64 time)
+static QVariant lastTime(int id, qint64 time)
 {
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	qint64 res = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->lastTime();
-	return QVariant::fromValue(res);
-}
-
-static QVariant nextTime(qint64 time)
-{
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	qint64 res = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->nextTime(time);
-	return QVariant::fromValue(res);
-}
-static QVariant previousTime(qint64 time)
-{
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	qint64 res = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->previousTime(time);
-	return QVariant::fromValue(res);
-}
-static QVariant closestTime(qint64 time)
-{
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	qint64 res = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->closestTime(time);
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	qint64 res = wks->processingPool()->lastTime();
 	return QVariant::fromValue(res);
 }
 
-static QVariant timeRange()
+static QVariant nextTime(int id, qint64 time)
 {
-	if (!vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
-		return error("no valid workspace selected");
-
-	VipTimeRange range = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea()->processingPool()->timeLimits();
-	return QVariant::fromValue(IntegerList() << range.first << range.second);
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	qint64 res = wks->processingPool()->nextTime(time);
+	return QVariant::fromValue(res);
+}
+static QVariant previousTime(int id, qint64 time)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	qint64 res = wks->processingPool()->previousTime(time);
+	return QVariant::fromValue(res);
+}
+static QVariant closestTime(int id, qint64 time)
+{
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	qint64 res = wks->processingPool()->closestTime(time);
+	return QVariant::fromValue(res);
 }
 
-static QVariant clampTime(const VipNDArray& ar, qint64 min, qint64 max)
+static QVariant timeRange(int id)
 {
-	if (min >= max) {
-		return error("wrong min max time values (min >= max)");
-	}
-	if (ar.isEmpty())
-		return QVariant::fromValue(VipNDArray());
+	auto* wks = findWorkspace(id);
+	if (!wks)
+		return error("invalid workspace id");
+	VipTimeRange range = wks->processingPool()->timeLimits();
+	return vipToVariant(QVariantList() << range.first << range.second);
+}
 
-	// The array comes from Python. Its rank was never checked, so shape(1) on a
-	// one dimensional array read past the shape vector and gave an arbitrary
-	// size; and its buffer was reinterpreted as vip_double whatever it held, so
-	// an array of four byte elements gave twice its length in reads past the end
-	// of the block, and what was read came back to the caller. Convert, which is
-	// what every other function of this file does.
-	if (ar.shapeCount() != 2 || ar.shape(0) != 2)
-		return error("clamp_time expects an array of shape 2xN");
+static QVariant plot_canvas(int player)
+{
+	auto* pl = findPlayer(player);
 
-	const VipNDArrayType<vip_double, 2> in = ar;
-	if (in.isEmpty())
-		return error("clamp_time cannot read this array as numbers");
-
-	const qsizetype size = in.shape(1);
-	const vip_double* xptr = in.ptr();
-	const vip_double* yptr = xptr + size;
-
-	for (qsizetype i = 1; i < size; ++i) {
-		if (xptr[i] <= xptr[i - 1])
-			return error("given signal is not continuous");
-	}
-
-	QVector<vip_double> x, y;
-	x.reserve(size);
-	y.reserve(size);
-	qsizetype i = 0;
-	while (i < size && xptr[i] < min)
-		++i;
-	while (i < size && xptr[i] <= max) {
-		x.append(xptr[i]);
-		y.append(yptr[i]);
-		++i;
-	}
-
-	if (x.isEmpty())
-		return QVariant::fromValue(VipNDArray());
-
-	VipNDArray res(qMetaTypeId<vip_double>(), vipVector(2, x.size()));
-	vip_double* data = (vip_double*)res.data();
-	memcpy(data, x.data(), sizeof(vip_double) * x.size());
-	memcpy(data + x.size(), y.data(), sizeof(vip_double) * y.size());
-	return QVariant::fromValue(res);
+	if (auto* plot = qobject_cast<VipPlotPlayer*>(pl))
+		return plot->leftScaleCount();
+	return 1;
 }
 
 static VipDisplayPlotItem* findDisplay(VipPlayer2D* pl, const QString& partial_name)
@@ -953,29 +1329,20 @@ static VipDisplayPlotItem* findDisplay(VipPlayer2D* pl, const QString& partial_n
 	return nullptr;
 }
 
-#define PLOT_PLAYER 0  // a 2D player containing curves, histograms, ...
-#define VIDEO_PLAYER 1 // a 2D player displaying an image or a video
-#define _2D_PLAYER 2   // other type of 2D player
-#define OTHER_PLAYER 3 // other type of player
-
 static QVariant playerType(int player)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w->widget());
+	VipAbstractPlayer* pl = findPlayer(player);
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
+	return QString(pl->metaObject()->className());
+}
 
-	if (qobject_cast<VipVideoPlayer*>(pl))
-		return QVariant::fromValue(VIDEO_PLAYER);
-	else if (qobject_cast<VipPlotPlayer*>(pl))
-		return QVariant::fromValue(PLOT_PLAYER);
-	else if (qobject_cast<VipPlayer2D*>(pl))
-		return QVariant::fromValue(_2D_PLAYER);
-	else
-		return QVariant::fromValue(OTHER_PLAYER);
+static QVariant playerToolBar(int player)
+{
+	VipAbstractPlayer* pl = findPlayer(player);
+	if (!pl)
+		return error("invalid player id");
+	return vipToVariant(pl->playerToolBar());
 }
 
 static QVariant currentPlayer()
@@ -983,24 +1350,18 @@ static QVariant currentPlayer()
 	if (VipDisplayPlayerArea* area = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea())
 		if (VipDragWidget* drag = area->dragWidgetHandler()->focusWidget())
 			if (/* VipAbstractPlayer* pl =*/qobject_cast<VipAbstractPlayer*>(drag->widget()))
-				return QVariant::fromValue(VipUniqueId::id(static_cast<VipBaseDragWidget*>(drag)));
-	return QVariant(0);
+				return playerId(drag);
+	return 0;
 }
 
 static QVariant setSelected(int player, bool selected, const QString& partial_name)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
+		return error("invalid player id");
 	VipDisplayPlotItem* item = findDisplay(pl, partial_name);
-	if (!item) {
+	if (!item)
 		return error("cannot find a valid data for name " + partial_name);
-	}
 
 	item->item()->setSelected(selected);
 	return QVariant();
@@ -1008,14 +1369,9 @@ static QVariant setSelected(int player, bool selected, const QString& partial_na
 
 static QVariant unselectAll(int player)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
+		return error("invalid player id");
 	QList<QGraphicsItem*> items = pl->plotWidget2D()->scene()->selectedItems();
 	for (int i = 0; i < items.size(); ++i) {
 		items[i]->setSelected(false);
@@ -1025,14 +1381,10 @@ static QVariant unselectAll(int player)
 
 static QVariant itemList(int player, int selection, const QString& partial_name)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	// TODO: reimplement properly
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
+		return error("invalid player id");
 	if (VipVideoPlayer* video = qobject_cast<VipVideoPlayer*>(pl)) {
 		//"image" is a valid name for video player
 		if (partial_name.isEmpty() || QString("image").indexOf(partial_name) >= 0) {
@@ -1089,84 +1441,35 @@ static QVariant itemList(int player, int selection, const QString& partial_name)
 // data name", which is what every call produced.
 static QVariant setStyleSheet(int player, const QString& stylesheet, const QString& data_name)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
-	VipDisplayPlotItem* item = findDisplay(pl, data_name);
-	if (!item)
-		return error("cannot find data name for player " + QString::number(player));
-	item->setAttribute("stylesheet", stylesheet);
-	// The pool of the player this call names, not the one of whatever workspace
-	// happens to be in front: the identifier is global, so a player of another
-	// workspace had its attribute set and someone else's pipeline reloaded. And
-	// the current workspace can be none, which eleven other places in this file
-	// already test for.
+	if (data_name.isEmpty()) {
+		pl->plotWidget2D()->area()->setStyleSheet(stylesheet);
+	}
+	else {
+		VipDisplayPlotItem* item = findDisplay(pl, data_name);
+		if (!item)
+			return error("cannot find data name for player " + QString::number(player));
+		item->setAttribute("stylesheet", stylesheet);
+	}
+
 	if (VipProcessingPool* pool = pl->processingPool())
 		pool->reload();
 	return QVariant();
 }
 
-static QVariant topLevel(int player)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipBaseDragWidget* mw = w->topLevelMultiDragWidget();
-	if (!mw)
-		return error("cannot find a valid top level window for player number " + QString::number(player));
-
-	return (QVariant(VipUniqueId::id(mw)));
-}
-
 static QVariant getData(int player, const QString& data_name)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	// TODO: reimplement properly (return VipAnyData)
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
+		return error("invalid player id");
 	VipDisplayPlotItem* item = findDisplay(pl, data_name);
 	if (!item)
 		return error("cannot find data name for player " + QString::number(player));
-	return (item->inputAt(0)->data().data());
-}
-
-#include "VipProcessingObjectEditor.h"
-
-static QVariant loadData(const QString& path, const QVariant& time)
-{
-	std::unique_ptr<VipIODevice> device(VipCreateDevice::create(path));
-	if (!device)
-		return error("no suitable device found for given path");
-
-	if (!device->open(VipIODevice::ReadOnly)) {
-		return error("unable to open device of type " + QString(device->metaObject()->className()));
-	}
-	if (device->outputCount() == 0)
-		return error("device has no output");
-
-	if (device->deviceType() == VipIODevice::Temporal) {
-		qint64 load_time = device->firstTime();
-		if (!time.isNull())
-			load_time = time.toLongLong();
-		if (!device->read(load_time))
-			return error("cannot read first time of device");
-	}
-
-	VipAnyData any = device->outputAt(0)->data();
-	auto ret = any.attributes();
-	ret["data"] = any.data();
-	ret["time"] = any.time();
-	return QVariant::fromValue(ret);
+	return vipToVariant(VipPyObject(vipAnyDataToPython(item->inputAt(0)->data()), borrow_t{}));
 }
 
 static QVariant clickedPoint()
@@ -1181,311 +1484,155 @@ static QVariant clickedPoint()
 	return QVariant();
 }
 
-static QVariant getDataAttribute(int player, const QString& data_name, const QString& attr_name)
+static QVariant create_ellipse(double left, double top, double width, double height, const QVariantMap& attrs)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipDisplayPlotItem* item = findDisplay(pl, data_name);
-	if (!item)
-		return error("cannot find data name for player " + QString::number(player));
-	return item->inputAt(0)->probe().attribute(attr_name);
+	QPainterPath path;
+	path.addEllipse(QRectF(left, top, width, height));
+	VipShape sh(path);
+	sh.setAttributes(attrs);
+	return vipToVariant(VipPyObject(vipVariantToPython(vipToVariant(sh)), borrow_t{}));
 }
 
-static QVariant getDataAttributes(int player, const QString& data_name)
+static QVariant get_shape(int player, const QString& id, int canvas)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipDisplayPlotItem* item = findDisplay(pl, data_name);
-	if (!item)
-		return error("cannot find data name for player " + QString::number(player));
-	QVariantMap map = item->inputAt(0)->probe().attributes();
-	return QVariant::fromValue(map);
-}
-
-static QVariant getROIPolygon(int player, QString yaxis, const QString& group, int roi)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
+	if (canvas < 0)
+		return error("invalid canvas value");
 
 	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!yaxis.isEmpty())
+	if (canvas)
 		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
-			VipAbstractScale* sc = plot->findYScale(yaxis);
+			if (canvas >= plot->leftScaleCount())
+				return error("invalid canvas value");
+			VipAbstractScale* sc = plot->leftScales()[canvas];
 			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
 		}
 	if (!model)
-		return error("cannot find a valid shape for given yaxis: " + yaxis);
-	VipShape sh = model->sceneModel().find(group, roi);
+		return error("cannot find a valid shape for given canvas");
+	VipShape sh = model->sceneModel().find(id);
 	if (sh.isNull())
-		return error("cannot find a valid shape for given group and id: " + group + ", " + QString::number(roi));
-
-	QPolygonF points;
-	if (sh.type() == VipShape::Polyline)
-		points = sh.polyline();
-	else if (sh.type() == VipShape::Point)
-		points << sh.point();
-	else {
-		points = sh.polygon();
-		// points.removeLast();
-	}
-	VipNDArray y, x;
-	if (qobject_cast<VipVideoPlayer*>(pl)) {
-		y = VipNDArray(QMetaType::Int, vipVector(points.size()));
-		x = VipNDArray(QMetaType::Int, vipVector(points.size()));
-		for (int i = 0; i < points.size(); ++i) {
-			((int*)(x.data()))[i] = qRound(points[i].x());
-			((int*)(y.data()))[i] = qRound(points[i].y());
-		}
-	}
-	else {
-		y = VipNDArray(QMetaType::Double, vipVector(points.size()));
-		x = VipNDArray(QMetaType::Double, vipVector(points.size()));
-		for (int i = 0; i < points.size(); ++i) {
-			((double*)(x.data()))[i] = (points[i].x());
-			((double*)(y.data()))[i] = (points[i].y());
-		}
-	}
-	return QVariant::fromValue(QVariantList() << QVariant::fromValue(y) << QVariant::fromValue(x));
+		return error("cannot find a valid shape for id '" + id + "'");
+	return vipToVariant(VipPyObject(vipVariantToPython(vipToVariant(sh)), borrow_t{}));
 }
 
-static QVariant getROIBoundingRect(int player, QString yaxis, const QString& group, int roi)
+static VipNDArray fill_pixels(const VipShape& sh)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
+	auto vec = sh.fillPixels();
+	return VipNDArray((int*)vec.data(), vipVector(vec.size(), 2));
+}
 
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+static QVariant clear_shapes(int player, int canvas)
+{
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
+	if (canvas < 0)
+		return error("invalid canvas value");
 
 	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!yaxis.isEmpty())
+	if (canvas > 0)
 		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
-			VipAbstractScale* sc = plot->findYScale(yaxis);
+			if (canvas >= plot->leftScaleCount())
+				return error("invalid canvas value");
+			VipAbstractScale* sc = plot->leftScales()[canvas];
 			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
 		}
 	if (!model)
-		return error("cannot find a valid shape for given yaxis: " + yaxis);
-	VipShape sh = model->sceneModel().find(group, roi);
-	if (sh.isNull())
-		return error("cannot find a valid shape for given group and id: " + group + ", " + QString::number(roi));
-
-	QRectF r = sh.boundingRect();
-	return QVariant::fromValue(QVariantList() << r.left() << r.top() << r.width() << r.height());
-}
-
-static QVariant getROIPoints(int player, const QString& group, int roi)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid video player for number " + QString::number(player));
-
-	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!model)
-		return error("cannot find a valid shape for given player");
-	VipShape sh = model->sceneModel().find(group, roi);
-	if (sh.isNull())
-		return error("cannot find a valid shape for given group and id: " + group + ", " + QString::number(roi));
-	QVector<QPoint> points = sh.fillPixels();
-	VipNDArray y(QMetaType::Int, vipVector(points.size()));
-	VipNDArray x(QMetaType::Int, vipVector(points.size()));
-	for (int i = 0; i < points.size(); ++i) {
-		((int*)(x.data()))[i] = (points[i].x());
-		((int*)(y.data()))[i] = (points[i].y());
-	}
-
-	return QVariant::fromValue(QVariantList() << QVariant::fromValue(y) << QVariant::fromValue(x));
-}
-
-static QVariant clearROIs(int player, const QString& yaxis)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!yaxis.isEmpty())
-		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
-			VipAbstractScale* sc = plot->findYScale(yaxis);
-			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
-		}
-	if (!model)
-		return error("cannot find a valid shape for given yaxis: " + yaxis);
+		return error("cannot find a valid shape for given canvas");
 
 	model->sceneModel().clear();
 	return QVariant();
 }
 
-static QVariant addROI(int player, const QVariant& v, const QString& yaxis)
+static QVariant add_shape(int player, const VipShape& sh, const QString& id, int canvas)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
+	if (canvas < 0)
+		return error("invalid canvas value");
 
-	VipPointVector points;
-	VipNDArrayType<vip_double> yx = v.value<VipNDArray>().convert<vip_double>();
-	if (yx.isEmpty()) {
-		if (v.userType() == qMetaTypeId<QString>() || v.userType() == qMetaTypeId<QByteArray>()) {
-			QString filename = v.toString();
-			VipShapeList res = vipGetSceneModelWidgetPlayer()->editor()->openShapes(filename, pl);
-			if (res.size()) {
-				QStringList lst;
-				for (int i = 0; i < res.size(); ++i)
-					lst.append(res[i].identifier());
-				return QVariant::fromValue(lst);
+	VipPlotSceneModel* model = pl->plotSceneModel();
+	if (canvas > 0)
+		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
+			if (plot->leftScaleCount() <= canvas)
+				return error("invalid canvas value");
+			VipAbstractScale* sc = plot->leftScales()[canvas];
+			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
+		}
+	if (!model)
+		return error("cannot find a valid shape for given canvas");
+
+	if (!id.isEmpty()) {
+		auto exist = model->sceneModel().find(id);
+		if (!exist.isNull()) {
+			if (exist.type() != sh.type())
+				return error("cannot replace a shape of different type");
+			// replace
+			if (sh.type() == VipShape::Point) {
+				exist.mergeAttributes(sh.attributes());
+				exist.setPoint(sh.point());
 			}
-			else
-				return error("unable to open file " + filename);
+			else if (sh.type() == VipShape::Polyline) {
+				exist.mergeAttributes(sh.attributes());
+				exist.setPolyline(sh.polyline());
+			}
+			else if (sh.type() == VipShape::Polygon) {
+				exist.mergeAttributes(sh.attributes());
+				exist.setPolygon(sh.polygon());
+			}
+			else {
+				exist.mergeAttributes(sh.attributes());
+				exist.setShape(sh.shape());
+			}
+			return id;
 		}
-		QVariantList lst = v.value<QVariantList>();
-		if (lst.size() != 2)
-			return error("wrong ROI value");
-		if (lst[0].canConvert<double>() && lst[1].canConvert<double>())
-			points.push_back(VipPoint(lst[1].toDouble(), lst[0].toDouble()));
-		else if (lst[0].canConvert<QVariantList>() && lst[1].canConvert<QVariantList>()) {
-			QVariantList l0 = lst[0].value<QVariantList>();
-			QVariantList l1 = lst[1].value<QVariantList>();
-			if (l0.size() != l1.size() || l0.size() == 0)
-				return error("wrong ROI value");
-			for (int i = 0; i < l0.size(); ++i)
-				points.push_back(VipPoint(l1[i].toDouble(), l0[i].toDouble()));
-		}
-		else if (lst[0].canConvert<VipNDArray>() && lst[1].canConvert<VipNDArray>()) {
-			VipNDArrayType<vip_double> y = lst[0].value<VipNDArray>().convert<vip_double>();
-			VipNDArrayType<vip_double> x = lst[1].value<VipNDArray>().convert<vip_double>();
-			if (x.shapeCount() != 1 || y.shapeCount() != 1 || x.size() != y.size() || x.isEmpty())
-				return error("wrong ROI value");
-			for (int i = 0; i < x.size(); ++i)
-				points.push_back(VipPoint(x(i), y(i)));
-		}
-		else
-			return error("wrong ROI value");
 	}
-	else {
-		if (yx.shapeCount() != 2)
-			return error("wrong ROI value");
-		for (int i = 0; i < yx.shape(1); ++i)
-			points.push_back(VipPoint(yx(1, i), yx(0, i)));
-	}
-	if (points.isEmpty())
-		return error("wrong ROI value");
 
-	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!yaxis.isEmpty())
-		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
-			VipAbstractScale* sc = plot->findYScale(yaxis);
-			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
-		}
-	if (!model)
-		return error("cannot find a valid shape for given yaxis: " + yaxis);
-
-	VipShape sh;
-	if (points.size() == 1) {
-		sh.setPoint(points.last().toPointF());
+	// Create
+	if (sh.type() == VipShape::Point)
 		model->sceneModel().add("Points", sh);
-	}
-	else if (points.last() == points.first()) {
-		sh.setPolygon(vipToPointF(points));
-		model->sceneModel().add("ROI", sh);
-	}
-	else {
-		sh.setPolyline(vipToPointF(points));
+	else if (sh.type() == VipShape::Polyline)
 		model->sceneModel().add("Polylines", sh);
-	}
-
-	return QVariant(sh.identifier());
+	else
+		model->sceneModel().add("ROI", sh);
+	return sh.identifier();
 }
 
-static QVariant addEllipse(int player, const QVariant& v, const QString& yaxis)
+static QVariant remove_shape(int player, const QString& id, int canvas)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	QRectF rect;
-	if (v.userType() == qMetaTypeId<QVariantList>()) {
-		const QVariantList lst = v.value<QVariantList>();
-		if (lst.size() != 4)
-			return error("wrong ROI value");
-		rect = QRectF(lst[0].toDouble(), lst[1].toDouble(), lst[2].toDouble(), lst[3].toDouble());
-	}
-	else {
-		VipNDArrayType<vip_double> yx = v.value<VipNDArray>().convert<vip_double>();
-		if (yx.shapeCount() != 1 || yx.size() != 4)
-			return error("wrong ROI value");
-
-		rect = QRectF(yx(0), yx(1), yx(2), yx(3));
-	}
+		return error("invalid player id");
+	if (canvas < 0)
+		return error("invalid canvas value");
 
 	VipPlotSceneModel* model = pl->plotSceneModel();
-	if (!yaxis.isEmpty())
+	if (canvas > 0)
 		if (VipPlotPlayer* plot = qobject_cast<VipPlotPlayer*>(pl)) {
-			VipAbstractScale* sc = plot->findYScale(yaxis);
+			if (plot->leftScaleCount() <= canvas)
+				return error("invalid canvas value");
+			VipAbstractScale* sc = plot->leftScales()[canvas];
 			model = plot->findPlotSceneModel(QList<VipAbstractScale*>() << plot->xScale() << sc);
 		}
 	if (!model)
-		return error("cannot find a valid shape for given yaxis: " + yaxis);
+		return error("cannot find a valid shape for given canvas");
 
-	QPainterPath p;
-	p.addEllipse(rect);
-	VipShape sh(p);
-	model->sceneModel().add("ROI", sh);
-
-	return QVariant(sh.identifier());
-}
-
-static QVariant addCircle(int player, double x, double y, double r, const QString& yaxis)
-{
-	double left = x - r;
-	double top = y - r;
-	double width = r * 2;
-	double height = r * 2;
-	QVariantList lst;
-	lst << left << top << width << height;
-	return addEllipse(player, QVariant::fromValue(lst), yaxis);
+	auto exist = model->sceneModel().find(id);
+	if (!exist.isNull()) {
+		model->sceneModel().remove(exist);
+		return {};
+	}
+	return error("unable to find shape");
 }
 
 static QVariant extractTimeTrace(int player, const QVariantList& rois, const QVariantMap& attrs)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid video player for number " + QString::number(player));
-
-	VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w->widget());
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid video player for number " + QString::number(player));
+		return error("invalid player id");
 
 	VipPlotPlayer* out = nullptr;
 	if (int id = attrs["player"].toInt()) {
@@ -1534,37 +1681,188 @@ static QVariant extractTimeTrace(int player, const QVariantList& rois, const QVa
 	return QVariant(VipUniqueId::id(VipDragWidget::fromChild(out)));
 }
 
-static QVariant setDataAttribute(int player, const QString& data_name, const QString& attr_name, const QVariant& value)
+static QVariant player_as_image(int player)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = findPlayer(player);
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
-	VipDisplayPlotItem* item = findDisplay(pl, data_name);
-	if (!item)
-		return error("cannot find data name for player " + QString::number(player));
-	if (VipOutput* out = item->inputAt(0)->connection()->source()) {
-		out->parentProcessing()->setAttribute(attr_name, value);
+	VipRenderState state;
+	VipRenderObject::startRender(pl, state);
 
-		out->parentProcessing()->reload();
+	vipProcessEvents();
+
+	QPixmap pixmap(pl->size());
+	pixmap.fill(QColor(255, 255, 255)); // Qt::transparent);
+	
+	{
+		QPainter p(&pixmap);
+		p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+
+		vipFDAboutToRender().callAllMatch(pl);
+
+		VipRenderObject::renderObject(pl, &p, QPoint(), true, false);
+
+		VipRenderObject::endRender(pl, state);
+	}
+	VipGuiDisplayParamaters::instance()->watermark().addToPixmap(pixmap);
+	auto img = pixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+
+	return vipToVariant(VipNDArray(img.bits(), qMetaTypeId<VipRGB>(), vipVector(img.height(), img.width())));
+}
+
+static QVariant player_color_map(int player)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	auto map = pl->colorMap();
+	if (map == VipLinearColorMap::Unknown)
+		return QString();
+	else
+		return QString(VipLinearColorMap::colorMapToName((VipLinearColorMap::StandardColorMap)map));
+}
+static QVariant set_player_color_map(int player, const QString& name)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+	auto map = VipLinearColorMap::colorMapFromName(name);
+	if (map == VipLinearColorMap::Unknown)
+		return error("invalid color map name");
+	pl->setColorMap(map);
+	return {};
+}
+
+static QVariant color_map_flat_histogram(int player)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	return pl->isFlatHistogramColorScale() ? pl->flatHistogramStrength() : 0;
+}
+static QVariant set_color_map_flat_histogram(int player, int strength)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+	if (strength < 0)
+		strength = 0;
+	else if (strength > 5)
+		strength = 5;
+	if (strength == 0)
+		pl->setFlatHistogramColorScale(false);
+	else {
+		pl->setFlatHistogramColorScale(true);
+		pl->setFlatHistogramStrength(strength);
+	}
+	return {};
+}
+
+static QVariant legend_position(int player)
+{
+	auto* pl = qobject_cast<VipPlotPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	return (int)pl->legendPosition();
+}
+static QVariant set_legend_position(int player, int pos)
+{
+	auto* pl = qobject_cast<VipPlotPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+	if (pos < 0)
+		pos = 0;
+	else if (pos > Vip::LegendInnerBottomRight)
+		pos = Vip::LegendInnerBottomRight;
+
+	pl->setLegendPosition((Vip::PlayerLegendPosition)pos);
+	return {};
+}
+
+static QVariant grid_visible(int player, int canvas)
+{
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+#ifdef VIP_WITH_VTK
+	if (auto* vtk = qobject_cast<VipVTKPlayer*>(pl)) {
+		return vtk->view()->axesVisible();
+	}
+#endif
+
+	if (auto* plot = qobject_cast<VipPlotPlayer*>(pl)) {
+		if (canvas < 0 || canvas >= plot->leftScaleCount())
+			return error("invalid canvas value");
+		auto* sc = plot->leftScales()[canvas];
+		auto grids = pl->plotWidget2D()->area()->findItems<VipPlotGrid*>();
+		for (auto* gr : grids) {
+			if (gr->axes().contains(sc)) {
+				return gr->isVisible();
+			}
+		}
 	}
 
-	return QVariant();
+	return pl->plotWidget2D()->area()->grid()->isVisible();
+}
+static QVariant set_grid_visible(int player,bool visible, int canvas)
+{
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+#ifdef VIP_WITH_VTK
+	if (auto* vtk = qobject_cast<VipVTKPlayer*>(pl)) {
+		vtk->view()->setAxesVisible(visible);
+		return {};
+	}
+#endif
+
+	if (auto* plot = qobject_cast<VipPlotPlayer*>(pl)) {
+		if (canvas < 0 || canvas >= plot->leftScaleCount())
+			return error("invalid canvas value");
+		auto* sc = plot->leftScales()[canvas];
+		auto grids = pl->plotWidget2D()->area()->findItems<VipPlotGrid*>();
+		for (auto* gr : grids) {
+			if (gr->axes().contains(sc)) {
+				gr->setVisible(visible);
+				return {};
+			}
+		}
+	}
+
+	pl->plotWidget2D()->area()->grid()->setVisible(visible);
+	return {};
+}
+
+
+static QVariant auto_color_map(int player)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	return pl->isAutomaticColorScale();
+}
+static QVariant set_auto_color_map(int player, bool enable)
+{
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	pl->setAutomaticColorScale(enable);
+	return {};
 }
 
 static QVariant removeSignal(int player, const QString& data_name)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
+	auto* pl = qobject_cast<VipPlotPlayer*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
 	if (data_name.isEmpty()) {
 		return error("a valid data name must be specified");
@@ -1581,30 +1879,69 @@ static QVariant removeSignal(int player, const QString& data_name)
 			++count;
 		}
 	}
-	return QVariant(count);
+	return count;
 }
 
+static QVariant getTimeMarker(int player)
+{
+	auto* pl = qobject_cast<VipPlotPlayer*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	return pl->timeMarker()->isVisible();
+}
 static QVariant setTimeMarker(int player, bool enable)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
+	auto* pl = qobject_cast<VipPlotPlayer*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid plot player for number " + QString::number(player));
+		return error("invalid player id");
 
 	pl->setTimeMarkerVisible(enable);
 	return QVariant();
 }
 
-static QVariant zoomArea(int player, double x1, double x2, double y1, double y2, const QString& unit)
+static QVariant x_scale(int player)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
+	auto* w = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
-	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w->widget())) {
+	if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w)) {
+		auto* x = pl->xScale();
+		return vipToVariant(QVariantList() << x->scaleDiv().bounds().minValue() << x->scaleDiv().bounds().maxValue());
+	}
+	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w)) {
+		auto* x = static_cast<VipImageArea2D*>(pl->plotWidget2D()->area())->bottomAxis();
+		return vipToVariant(QVariantList() << x->scaleDiv().bounds().minValue() << x->scaleDiv().bounds().maxValue());
+	}
+	return error("player does not support x scale");
+}
+static QVariant y_scale(int player, int canvas)
+{
+	auto* w = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!w)
+		return error("invalid player id");
+
+	if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w)) {
+		if (canvas < 0 || canvas >= pl->leftScaleCount())
+			return error("invalid canvas value");
+		auto* y = pl->leftScales()[canvas];
+		return vipToVariant(QVariantList() << y->scaleDiv().bounds().minValue() << y->scaleDiv().bounds().maxValue());
+	}
+	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w)) {
+		auto* y = static_cast<VipImageArea2D*>(pl->plotWidget2D()->area())->bottomAxis();
+		return vipToVariant(QVariantList() << y->scaleDiv().bounds().minValue() << y->scaleDiv().bounds().maxValue());
+	}
+	return error("player does not support y scale");
+}
+
+static QVariant zoomArea(int player, double x1, double x2, double y1, double y2, int canvas)
+{
+	auto* w = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!w)
+		return error("invalid player id");
+
+	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w)) {
 		QRectF rect = pl->visualizedImageRect();
 		if (x1 != x2) {
 			rect.setLeft(x1);
@@ -1617,8 +1954,10 @@ static QVariant zoomArea(int player, double x1, double x2, double y1, double y2,
 		pl->setVisualizedImageRect(rect.normalized());
 		return QVariant();
 	}
-	else if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget())) {
-		VipAbstractScale* left = pl->findYScale(unit);
+	else if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w)) {
+		if (canvas < 0 || canvas >= pl->leftScaleCount())
+			return error("invalid canvas value");
+		VipAbstractScale* left = pl->leftScales()[canvas];
 		VipAbstractScale* bottom = pl->xScale();
 		if (!left || !bottom)
 			return error("cannot find valid axes for player number " + QString::number(player));
@@ -1632,18 +1971,14 @@ static QVariant zoomArea(int player, double x1, double x2, double y1, double y2,
 		return QVariant();
 	}
 	else
-		return error("cannot find a valid plot player for number " + QString::number(player));
+		return error("player does not support zooming");
 }
 
 static QVariant setColorMapScale(int player, double min, double max, double gripMin, double gripMax)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w->widget());
+	auto* pl = qobject_cast<VipVideoPlayer*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid video player for number " + QString::number(player));
+		return error("invalid player id");
 
 	if (pl->spectrogram()->colorMap()) {
 		pl->setAutomaticColorScale(false);
@@ -1655,139 +1990,39 @@ static QVariant setColorMapScale(int player, double min, double max, double grip
 	return QVariant();
 }
 
-static QVariant playerRange(int player)
-{
-	qRegisterMetaType<DoubleList>();
-
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	if (VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget())) {
-		VipInterval inter = pl->xScale()->scaleDiv().bounds().normalized();
-		return QVariant::fromValue(DoubleList() << inter.minValue() << inter.maxValue());
-	}
-	if (VipVideoPlayer* pl = qobject_cast<VipVideoPlayer*>(w->widget())) {
-		if (VipDisplayObject* obj = pl->mainDisplayObject()) {
-			QList<VipIODevice*> dev = vipListCast<VipIODevice*>(obj->allSources());
-			if (dev.size() == 1 && dev.first()->deviceType() == VipIODevice::Temporal) {
-				VipTimeRange r = dev.first()->timeLimits();
-				return QVariant::fromValue(DoubleList() << r.first << r.second);
-			}
-		}
-	}
-
-	return error("cannot find a valid player or device for number " + QString::number(player));
-}
-
 static QVariant autoScale(int player, bool enable)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
+	// TODO: reimplement and make it work with ALL players
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid plot player for number " + QString::number(player));
+		return error("invalid player id");
 
-	pl->setAutoScale(enable);
-	return QVariant();
-}
-static QVariant setXScale(int player, vip_double min, vip_double max)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid plot player for number " + QString::number(player));
-
-	if (VipAbstractScale* sc = pl->xScale()) {
-		sc->setAutoScale(false);
-		sc->setScaleDiv(sc->scaleEngine()->divideScale(min, max, sc->maxMajor(), sc->maxMinor()));
-		return QVariant();
+	if (auto* plot = qobject_cast<VipPlotPlayer*>(pl)) {
+		plot->setAutoScale(enable);
+		return {};
 	}
-	return error("cannot find a valid scale for player number " + QString::number(player));
-}
-static QVariant setYScale(int player, vip_double min, vip_double max, const QString& unit)
-{
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid plot player for number " + QString::number(player));
-
-	if (VipAbstractScale* sc = pl->findYScale(unit)) {
-		sc->setAutoScale(false);
-		sc->setScaleDiv(sc->scaleEngine()->divideScale(min, max, sc->maxMajor(), sc->maxMinor()));
-		return QVariant();
+#if VIP_WITH_VTK
+	if (auto* vtk = qobject_cast<VipVTKPlayer*>(pl)) {
+		if (enable)
+			vtk->view()->resetCamera();
+		return {};
 	}
-	return error("cannot find a valid scale for player number " + QString::number(player));
-}
-
-static QVariant xRange(int player)
-{
-	qRegisterMetaType<DoubleList>();
-
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlotPlayer* pl = qobject_cast<VipPlotPlayer*>(w->widget());
-	if (!pl)
-		return error("cannot find a valid plot player for number " + QString::number(player));
-
-	QList<VipPlotCurve*> curves = pl->viewer()->area()->findItems<VipPlotCurve*>();
-	if (curves.isEmpty())
-		return QVariant::fromValue(DoubleList());
-
-	DoubleList res;
-	for (int i = 0; i < curves.size(); ++i) {
-		if (!curves[i]->isVisible())
-			continue;
-		vip_double min, max;
-		if (curves[i]->rawData().size()) {
-			const VipPointVector v = curves[i]->rawData();
-			min = max = v.first().x();
-			for (int i = 1; i < v.size(); ++i) {
-				if (v[i].x() < min)
-					min = v[i].x();
-				if (v[i].x() > max)
-					max = v[i].x();
-			}
-			if (res.isEmpty())
-				res << min << max;
-			else {
-				res[0] = qMin(min, res[0]);
-				res[1] = qMax(max, res[1]);
-			}
+#endif
+	if (auto* video = qobject_cast<VipVideoPlayer*>(pl)) {
+		if (enable) {
+			QRectF rect = static_cast<VipImageArea2D*>(video->plotWidget2D()->area())->imageBoundingRect();
+			static_cast<VipImageArea2D*>(video->plotWidget2D()->area())->setVisualizedImageRect(rect);
 		}
+		return {};
 	}
-
-	return QVariant::fromValue(res);
+	return error("player does not support auto scaling");
 }
 
 static QVariant setPlayerTitle(int player, const QString& title)
 {
-	VipBaseDragWidget* base = VipUniqueId::find<VipBaseDragWidget>(player);
-	if (!base)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	if (VipMultiDragWidget* w = qobject_cast<VipMultiDragWidget*>(base)) {
-		w->setWindowTitle(title);
-		return QVariant();
-	}
-
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(base);
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipAbstractPlayer* pl = qobject_cast<VipAbstractPlayer*>(w->widget());
+	VipAbstractPlayer* pl = findPlayer(player);
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
 	if (!title.isEmpty()) {
 		pl->setAutomaticWindowTitle(false);
@@ -1799,6 +2034,14 @@ static QVariant setPlayerTitle(int player, const QString& title)
 			pl->processingPool()->reload();
 	}
 	return QVariant();
+}
+
+static QVariant playerTitle(int player)
+{
+	VipAbstractPlayer* pl = findPlayer(player);
+	if (!pl)
+		return error("invalid player id");
+	return pl->windowTitle();
 }
 
 // annotation functions
@@ -1830,15 +2073,11 @@ static int _createId()
 
 #include "VipAnnotationEditor.h"
 
-static QVariant createAnnotation(int player, const QString& type, const QString& text, const QList<double>& pos, const QVariantMap& attributes)
+/* static QVariant createAnnotation(int player, const QString& type, const QString& text, const QList<double>& pos, const QVariantMap& attributes)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
 	if (!(pos.size() == 2 || pos.size() == 4))
 		return error("wrong position (should a list of 2 or 4 values, start coordinates and optional end coordinates)");
@@ -1880,13 +2119,9 @@ static QVariant clearAnnotation(int id)
 	const QString group = ref.group;
 	const int sh_id = ref.shapeId;
 
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
 	VipPlotSceneModel* model = pl->plotSceneModel();
 	if (!yaxis.isEmpty()) {
@@ -1910,13 +2145,9 @@ static QVariant clearAnnotation(int id)
 
 static QVariant clearAnnotations(int player, bool all)
 {
-	VipDragWidget* w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w)
-		return error("cannot find a valid player for number " + QString::number(player));
-
-	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(w->widget());
+	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
-		return error("cannot find a valid player for number " + QString::number(player));
+		return error("invalid player id");
 
 	// only remove python annotations (ones with _vip_annotation_id attribute)
 	QList<VipPlotSceneModel*> models = pl->plotSceneModels();
@@ -1938,10 +2169,11 @@ static QVariant clearAnnotations(int player, bool all)
 	// vipRemoveAllAnnotations(pl);
 	return QVariant();
 }
+*/
 
-static QVariant play(bool enable)
+static QVariant play(int id, bool enable)
 {
-	auto* wks = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
+	auto* wks = findWorkspace(id);
 	if (!wks)
 		return error("no workspace available");
 
@@ -1952,9 +2184,9 @@ static QVariant play(bool enable)
 	return {};
 }
 
-static QVariant repeat(bool enable)
+static QVariant repeat(int id, bool enable)
 {
-	auto* wks = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
+	auto* wks = findWorkspace(id);
 	if (!wks)
 		return error("no workspace available");
 
@@ -1962,9 +2194,9 @@ static QVariant repeat(bool enable)
 	return {};
 }
 
-static QVariant stream(bool enable)
+static QVariant stream(int id, bool enable)
 {
-	auto* wks = vipGetMainWindow()->displayArea()->currentDisplayPlayerArea();
+	auto* wks = findWorkspace(id);
 	if (!wks)
 		return error("no workspace available");
 
@@ -2025,44 +2257,35 @@ static QVariant add_tool_widget(const VipPyObjectPtr& widget, bool floating, int
 	return vipToVariant(VipPyObjectPtr(new VipPyObject(vipPythonFromQObject(tool))));
 }
 
-/* static QVariant addFunction(int player, PyObject* fun, const QString& fun_name, const QString& item_name)
+static QVariant add_processing(int player, const VipPyObject& proc, const QString& fun_name, const QString& item_name)
 {
-	//find the player
-	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error( "cannot find a valid player for number " + QString::number(player));
-	}
+	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
 
-	VipPlayer2D * pl = qobject_cast<VipPlayer2D*>(w->widget());
-	if (!pl) {
-		return error( "cannot find a valid plot player for number " + QString::number(player));
-	}
+	VipDisplayPlotItem* item = findDisplay(pl, item_name);
+	if (!item)
+		return error("cannot find a valid data for name " + item_name);
 
-	VipDisplayPlotItem * item = findDisplay(pl, item_name);
-	if (!item) {
-		return error( "cannot find a valid data for name " + item_name);
-	}
+	QList<VipProcessingList*> lst = vipListCast<VipProcessingList*>(item->allSources());
+	if (!lst.size())
+		return error("cannot find a valid data for name " + item_name);
 
-	QList<VipProcessingList *> lst = vipListCast<VipProcessingList*>(item->allSources());
-	if (!lst.size()) {
-		return error( "cannot find a valid data for name " + item_name);
-	}
+	VipProcessingList* p = lst.first();
 
-	VipProcessingList * p = lst.first();
-
-	//find a VipPyFunctionProcessing with given name
+	// find a VipPyWrapperProcessing with given name
 	bool found = false;
 	for (int i = 0; i < p->size(); ++i) {
-		if (VipPyFunctionProcessing * proc = qobject_cast<VipPyFunctionProcessing*>(p->at(i)))
+		if (VipPyWrapperProcessing* proc = qobject_cast<VipPyWrapperProcessing*>(p->at(i)))
 			if (proc->property("_vip_processingName").toString() == fun_name) {
-				proc->setFunction(fun);
+				proc->initializeProcessing(vipToVariant(proc));
 				found = true;
 				break;
 			}
 	}
 	if (!found) {
-		VipPyFunctionProcessing * proc = new VipPyFunctionProcessing();
-		proc->setFunction(fun);
+		VipPyWrapperProcessing* proc = new VipPyWrapperProcessing();
+		proc->initializeProcessing(vipToVariant(proc));
 		proc->setProperty("_vip_processingName", fun_name);
 		p->append(proc);
 	}
@@ -2071,45 +2294,73 @@ static QVariant add_tool_widget(const VipPyObjectPtr& widget, bool floating, int
 	return QVariant();
 }
 
-static QVariant getFunction(int player, const QString & fun_name, const QString & item_name)
+static QVariant get_processing(int player, const QString& fun_name, const QString& item_name)
 {
-	//find the player
-	VipDragWidget * w = qobject_cast<VipDragWidget*>(VipUniqueId::find<VipBaseDragWidget>(player));
-	if (!w) {
-		return error( "cannot find a valid player for number " + QString::number(player));
-	}
+	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
 
-	VipPlayer2D * pl = qobject_cast<VipPlayer2D*>(w->widget());
-	if (!pl) {
-		return error( "cannot find a valid plot player for number " + QString::number(player));
-	}
+	VipDisplayPlotItem* item = findDisplay(pl, item_name);
+	if (!item)
+		return error("cannot find a valid data for name " + item_name);
 
-	VipDisplayPlotItem * item = findDisplay(pl, item_name);
-	if (!item) {
-		return error( "cannot find a valid data for name " + item_name);
-	}
-
-	QList<VipProcessingList *> lst = vipListCast<VipProcessingList*>(item->allSources());
+	QList<VipProcessingList*> lst = vipListCast<VipProcessingList*>(item->allSources());
 	if (!lst.size()) {
-		return error( "cannot find a valid data for name " + item_name);
+		return error("cannot find a valid data for name " + item_name);
 	}
 
-	VipProcessingList * p = lst.first();
+	VipProcessingList* p = lst.first();
 
-	//find a VipPyFunctionProcessing with given name
-	VipPyFunctionProcessing* found = nullptr;
+	// find a VipPyFunctionProcessing with given name
+	VipPyWrapperProcessing* found = nullptr;
 	for (int i = 0; i < p->size(); ++i) {
-		if (VipPyFunctionProcessing * proc = qobject_cast<VipPyFunctionProcessing*>(p->at(i)))
+		if (VipPyWrapperProcessing* proc = qobject_cast<VipPyWrapperProcessing*>(p->at(i)))
 			if (proc->property("_vip_processingName").toString() == fun_name) {
 				found = proc;
 				break;
 			}
 	}
-	if (!found) {
-		return error( "unable to find processing " + fun_name);
+	if (!found)
+		return error("unable to find processing " + fun_name);
+
+	return vipToVariant(found->processingObject());
+}
+
+static QVariant remove_processing(int player, const QString& fun_name, const QString& item_name)
+{
+	VipPlayer2D* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
+	if (!pl)
+		return error("invalid player id");
+
+	VipDisplayPlotItem* item = findDisplay(pl, item_name);
+	if (!item)
+		return error("cannot find a valid data for name " + item_name);
+
+	QList<VipProcessingList*> lst = vipListCast<VipProcessingList*>(item->allSources());
+	if (!lst.size()) {
+		return error("cannot find a valid data for name " + item_name);
 	}
-	return ResultType(QVariant::fromValue((VipProcessingObject*)found), QString());
-}*/
+
+	VipProcessingList* p = lst.first();
+
+	// find a VipPyFunctionProcessing with given name
+	VipPyWrapperProcessing* found = nullptr;
+	for (int i = 0; i < p->size(); ++i) {
+		if (VipPyWrapperProcessing* proc = qobject_cast<VipPyWrapperProcessing*>(p->at(i)))
+			if (proc->property("_vip_processingName").toString() == fun_name) {
+				found = proc;
+				p->take(i);
+				break;
+			}
+	}
+	if (!found)
+		return {};
+
+	VipPyObject obj = found->processingObject();
+	delete found;
+
+	return vipToVariant(obj);
+}
 
 #include <QLibraryInfo>
 
@@ -2168,15 +2419,39 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(unselectAll, "unselect_all"));
 	vipRegisterFunction(vipMakeFunctionObject(queryPulseOrDate, "query"));
 	vipRegisterFunction(display, "open");
+
+	vipRegisterFunction(vipMakeFunctionObject(fill_pixels, "fill_pixels", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(create_ellipse, "create_ellipse", {}, false));
+
+	vipRegisterFunction(vipMakeFunctionObject(add_processing, "add_processing"));
+	vipRegisterFunction(vipMakeFunctionObject(get_processing, "get_processing"));
+	vipRegisterFunction(vipMakeFunctionObject(remove_processing, "remove_processing"));
+
+	vipRegisterFunction(vipMakeFunctionObject(setCurrentPlayer, "set_current_player"));
+	vipRegisterFunction(vipMakeFunctionObject(playerWorkspace, "player_workspace"));
 	vipRegisterFunction(vipMakeFunctionObject(closeWindow, "close"));
 	vipRegisterFunction(vipMakeFunctionObject(showMaximized, "show_maximized"));
 	vipRegisterFunction(vipMakeFunctionObject(showMinimized, "show_minimized"));
 	vipRegisterFunction(vipMakeFunctionObject(showNormal, "show_normal"));
 	vipRegisterFunction(vipMakeFunctionObject(_workspace, "workspace"));
+	vipRegisterFunction(vipMakeFunctionObject(closeWorkspace, "close_workspace"));
+	vipRegisterFunction(vipMakeFunctionObject(workspacePlayers, "workspace_players"));
 	vipRegisterFunction(vipMakeFunctionObject(_workspaces, "workspaces"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_pos, "workspace_pos"));
+	vipRegisterFunction(vipMakeFunctionObject(set_workspace_pos, "set_workspace_pos"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_as_session, "workspace_as_session"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_as_image, "workspace_as_image"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_orientation, "workspace_orientation"));
+	vipRegisterFunction(vipMakeFunctionObject(set_workspace_orientation, "set_workspace_orientation"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_left_tool_bar, "workspace_left_tool_bar"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_right_tool_bar, "workspace_right_tool_bar"));
 	vipRegisterFunction(vipMakeFunctionObject(currentWorkspace, "current_workspace"));
 	vipRegisterFunction(vipMakeFunctionObject(workspaceTitle, "workspace_title"));
 	vipRegisterFunction(vipMakeFunctionObject(setWorkspaceTitle, "set_workspace_title"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_floating, "workspace_floating"));
+	vipRegisterFunction(vipMakeFunctionObject(set_workspace_floating, "set_workspace_floating"));
+	vipRegisterFunction(vipMakeFunctionObject(setWorkspaceMaxColumns, "setWorkspaceMaxColumns"));
+	vipRegisterFunction(vipMakeFunctionObject(workspaceMaxColumns, "workspaceMaxColumns"));
 	vipRegisterFunction(vipMakeFunctionObject(currentTime, "time"));
 	vipRegisterFunction(vipMakeFunctionObject(setCurrentTime, "set_time"));
 	vipRegisterFunction(vipMakeFunctionObject(firstTime, "first_time"));
@@ -2186,45 +2461,44 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(closestTime, "closest_time"));
 	vipRegisterFunction(vipMakeFunctionObject(timeRange, "time_range"));
 	vipRegisterFunction(vipMakeFunctionObject(setStyleSheet, "set_stylesheet"));
-	vipRegisterFunction(vipMakeFunctionObject(clampTime, "clamp_time"));
 
-	vipRegisterFunction(vipMakeFunctionObject(topLevel, "top_level"));
 	vipRegisterFunction(vipMakeFunctionObject(resize_rows_columns, "resize_workspace"));
+	vipRegisterFunction(vipMakeFunctionObject(playerToolBar, "player_tool_bar"));
+	vipRegisterFunction(vipMakeFunctionObject(player_as_image, "player_as_image"));
+	vipRegisterFunction(vipMakeFunctionObject(player_color_map, "player_color_map"));
+	vipRegisterFunction(vipMakeFunctionObject(set_player_color_map, "set_player_color_map"));
+	vipRegisterFunction(vipMakeFunctionObject(color_map_flat_histogram, "color_map_flat_histogram"));
+	vipRegisterFunction(vipMakeFunctionObject(set_color_map_flat_histogram, "set_color_map_flat_histogram"));
 	vipRegisterFunction(vipMakeFunctionObject(getData, "get"));
-	vipRegisterFunction(vipMakeFunctionObject(loadData, "load"));
 	vipRegisterFunction(vipMakeFunctionObject(clickedPoint, "clicked_point"));
-	vipRegisterFunction(vipMakeFunctionObject(getDataAttribute, "get_attribute"));
-	vipRegisterFunction(vipMakeFunctionObject(getDataAttributes, "get_attributes"));
-	vipRegisterFunction(vipMakeFunctionObject(setDataAttribute, "set_attribute"));
-	vipRegisterFunction(vipMakeFunctionObject(getROIPolygon, "get_roi"));
-	vipRegisterFunction(vipMakeFunctionObject(getROIBoundingRect, "get_roi_bounding_rect"));
-	vipRegisterFunction(vipMakeFunctionObject(getROIPoints, "get_roi_filled_points"));
-	vipRegisterFunction(vipMakeFunctionObject(clearROIs, "clear_roi"));
+	vipRegisterFunction(vipMakeFunctionObject(get_shape, "get_shape"));
+	vipRegisterFunction(vipMakeFunctionObject(clear_shapes, "clear_shapes"));
 
-	vipRegisterFunction(vipMakeFunctionObject(addROI, "add_roi"));
-	vipRegisterFunction(vipMakeFunctionObject(addEllipse, "add_ellipse"));
-	vipRegisterFunction(vipMakeFunctionObject(addCircle, "add_circle"));
+	vipRegisterFunction(vipMakeFunctionObject(add_shape, "add_shape"));
+	vipRegisterFunction(vipMakeFunctionObject(remove_shape, "remove_shape"));
 	vipRegisterFunction(vipMakeFunctionObject(extractTimeTrace, "time_trace"));
+	vipRegisterFunction(vipMakeFunctionObject(legend_position, "legend_position"));
+	vipRegisterFunction(vipMakeFunctionObject(set_legend_position, "set_legend_position"));
+	vipRegisterFunction(vipMakeFunctionObject(grid_visible, "grid_visible"));
+	vipRegisterFunction(vipMakeFunctionObject(set_grid_visible, "set_grid_visible"));
+	vipRegisterFunction(vipMakeFunctionObject(auto_color_map, "auto_color_map"));
+	vipRegisterFunction(vipMakeFunctionObject(set_auto_color_map, "set_auto_color_map"));
 	vipRegisterFunction(vipMakeFunctionObject(removeSignal, "remove"));
 	vipRegisterFunction(vipMakeFunctionObject(setTimeMarker, "set_time_marker"));
+	vipRegisterFunction(vipMakeFunctionObject(getTimeMarker, "time_marker"));
+	vipRegisterFunction(vipMakeFunctionObject(plot_canvas, "plot_canvas"));
 	vipRegisterFunction(vipMakeFunctionObject(zoomArea, "zoom"));
+	vipRegisterFunction(vipMakeFunctionObject(x_scale, "x_scale"));
+	vipRegisterFunction(vipMakeFunctionObject(y_scale, "y_scale"));
 	vipRegisterFunction(vipMakeFunctionObject(setColorMapScale, "set_color_map_scale"));
-	vipRegisterFunction(vipMakeFunctionObject(xRange, "x_range"));
-	vipRegisterFunction(vipMakeFunctionObject(playerRange, "player_range"));
 	vipRegisterFunction(vipMakeFunctionObject(currentPlayer, "current_player"));
 	vipRegisterFunction(vipMakeFunctionObject(setTimeMarkers, "set_time_markers"));
 	vipRegisterFunction(vipMakeFunctionObject(removeTimeMarkers, "remove_time_markers"));
 
 	vipRegisterFunction(vipMakeFunctionObject(setRowRatio, "set_row_ratio"));
 	vipRegisterFunction(vipMakeFunctionObject(setPlayerTitle, "set_title"));
-	vipRegisterFunction(vipMakeFunctionObject(createAnnotation, "annotation"));
-	vipRegisterFunction(vipMakeFunctionObject(clearAnnotation, "remove_annotation"));
-	vipRegisterFunction(vipMakeFunctionObject(clearAnnotations, "clear_annotations"));
+	vipRegisterFunction(vipMakeFunctionObject(playerTitle, "title"));
 	vipRegisterFunction(vipMakeFunctionObject(autoScale, "auto_scale"));
-	vipRegisterFunction(vipMakeFunctionObject(setXScale, "set_x_scale"));
-	vipRegisterFunction(vipMakeFunctionObject(setYScale, "set_y_scale"));
-	vipRegisterFunction(vipMakeFunctionObject(setXScale, "set_x_scale"));
-	vipRegisterFunction(vipMakeFunctionObject(setXScale, "set_x_scale"));
 	vipRegisterFunction(vipMakeFunctionObject(userInput, "user_input"));
 
 	vipRegisterFunction(vipMakeFunctionObject(play, "play"));
@@ -2232,7 +2506,7 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(repeat, "repeat"));
 
 	// GUI functions
-
+	vipRegisterFunction(vipMakeFunctionObject(workspace_widget, "workspace_widget"));
 	vipRegisterFunction(vipMakeFunctionObject(get_generate_menu, "get_generate_menu"));
 	vipRegisterFunction(vipMakeFunctionObject(get_main_window, "get_main_window"));
 	vipRegisterFunction(vipMakeFunctionObject(get_tool_widgets, "get_tool_widgets"));

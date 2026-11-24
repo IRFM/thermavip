@@ -312,6 +312,7 @@ public:
 	virtual DeviceType deviceType() const;
 	virtual void close();
 	virtual QString fileFilters() const;
+	virtual void setOpenMode(VipIODevice::OpenModes mode) { VipIODevice::setOpenMode(mode); }
 
 	/// @brief Returns the processing editor if any
 	QObject* editor();
@@ -336,6 +337,7 @@ private:
 	void addCustomIOFromPython(const VipPyObject& obj, QStringList& names, VipProcessingIO::Type type);
 	void setLastError();
 	void updateOutput(const QString& name, int index);
+	bool computeInternalValues();
 	VIP_DECLARE_PRIVATE_DATA();
 };
 

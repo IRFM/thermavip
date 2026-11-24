@@ -64,6 +64,7 @@ public:
 
 	virtual LoadResult load()
 	{
+		
 		VipGILLocker lock;
 
 		VipPyError::clear();
@@ -344,6 +345,7 @@ void VipLoadPlugins::unloadAndDeletePlugins()
 
 VipPluginInterface::LoadResult VipLoadPlugins::loadPlugin(const QString& name, Location location, QString* error)
 {
+	
 	// get the full plugin filename
 
 	QString folder;

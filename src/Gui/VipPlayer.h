@@ -894,6 +894,10 @@ public:
 	VipAbstractScale* insertLeftScale(int index, VipAbstractScale* scale);
 	int leftScaleCount() const;
 
+	/// @brief Returns the plot canvas at given index starting from the bottom.
+	/// If the index is >= leftScaleCount(), create intermediate stacked areas.
+	VipPlotCanvas* canvas(int index);
+
 	/// Reinplemented from #VipAbstractPlayer::setProcessingPool().
 	///  Set a time marker (#VipPlotMarker) used to display the current time.
 	virtual void setProcessingPool(VipProcessingPool* pool);

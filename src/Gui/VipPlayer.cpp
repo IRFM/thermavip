@@ -6410,6 +6410,22 @@ int VipPlotPlayer::leftScaleCount() const
 	return 1;
 }
 
+VipPlotCanvas* VipPlotPlayer::canvas(int index)
+{
+	if (index < 0)
+		index = 0;
+
+	VipVMultiPlotArea2D* a = qobject_cast<VipVMultiPlotArea2D*>(this->plotWidget2D()->area());
+
+	if (index >= leftScaleCount() && !a)
+		return nullptr;
+
+	while (index >= leftScaleCount())
+		insertLeftScale(leftScaleCount());
+
+	return a->allCanvas()[index];
+}
+
 bool VipPlotPlayer::removeLeftScale(VipAbstractScale* scale)
 {
 	VipPlotWidget2D* pl = qobject_cast<VipPlotWidget2D*>(d_data->viewer);
