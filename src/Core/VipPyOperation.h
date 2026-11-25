@@ -254,6 +254,7 @@ public:
 	VipPyObject getMember(const char* name) const noexcept;
 	bool setMember(const char* name, const VipPyObject& value) noexcept;
 	bool delMember(const char* name) noexcept;
+	bool hasMember(const char* name) noexcept;
 
 	/// @brief Call a member function and return its result
 	VipPyObject callMember(const char* name, const QVariantList& args = {}, const QVariantMap& kwargs = {});

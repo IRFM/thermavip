@@ -1302,6 +1302,13 @@ bool VipPyObject::setMember(const char* name, const VipPyObject& value) noexcept
 	return PyObject_SetAttrString((PyObject*)pyobject, name, (PyObject*)value.pyObject()) == 0;
 }
 
+bool VipPyObject::hasMember(const char* name) noexcept
+{
+	if (isNull())
+		return false;
+	return (bool)PyObject_HasAttrString((PyObject*)pyobject, name);
+}
+
 bool VipPyObject::delMember(const char* name) noexcept
 {
 	if (isNull())

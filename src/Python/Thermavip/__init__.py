@@ -163,6 +163,8 @@ class VipAnyData:
         self.attributes["stylesheet"] = str(n)
 
 
+
+
 class VipPointVector:
     """Curve coordinates for open(). x and y hold NumPy arrays of corresponding
     coordinates.
@@ -170,8 +172,14 @@ class VipPointVector:
 
     def __init__(self, x=None, y=None):
         """Convert x and y independently with numpy.array()."""
-        self.x = np.array(x)
-        self.y = np.array(y)
+        if x is not None and y is not None:
+            if len(x) != len(y):
+                raise RuntimeError("x and y shape mismatch")
+            self.x = np.array(x)
+            self.y = np.array(y)
+        else:
+            self.x = None
+            self.y = None
 
 
 class VipIntervalSampleVector:
@@ -183,8 +191,14 @@ class VipIntervalSampleVector:
         """Convert intervals and values to arrays. The constructor does not check
         their shapes.
         """
-        self.intervals = np.array(intervals)
-        self.values = np.array(values)
+        if intervals is not None and values is not None:
+            if len(intervals) != len(values):
+                raise RuntimeError("intervals and values shape mismatch")
+            self.intervals = np.array(intervals)
+            self.values = np.array(values)
+        else:
+            self.intervals = None
+            self.values = None
 
 
 def __call_thermavip_fun(name, args, kwargs={}):
@@ -204,7 +218,7 @@ def call_thermavip_fun(name, args=tuple(), kwargs={}):
 
 
 
-class Player:
+class VipPlayer:
     """
     Class wrapping a VipAbstractPlayer C++ instance within Thermavip
     """
@@ -221,6 +235,7 @@ class Player:
         """
         Construct from a player Id.
         Construct from the current focus player if given Id is null.
+        In this case, raise a RuntimeError if there are no focus player.
         """
         if player_id == 0:
             player_id = call_thermavip_fun("current_player")
@@ -233,18 +248,27 @@ class Player:
     @staticmethod
     def current():
         """Return the current player"""
-        return Player(call_thermavip_fun("current_player"))
+        return VipPlayer(call_thermavip_fun("current_player"))
 
     @property
     def id(self):
-        """Returns the player id within Thermavip"""
+        """Return the player id within Thermavip"""
         return self.__id
 
     @property
     def workspace(self) -> int:
-        """ Returns given player workspace
+        """Return given player workspace
         """
-        return Workspace(call_thermavip_fun("player_workspace", (self.__id,)))
+        return VipWorkspace(call_thermavip_fun("player_workspace", (self.__id,)))
+
+    @property
+    def sources(self) -> list:
+        """Return all source devices for this player.
+        Sources devices are returned as VipInputDevice wrappers.
+        """
+        from .IODevice import VipInputDevice
+        dev = call_thermavip_fun("source_devices", (self.__id,))
+        return [VipInputDevice.open_wrapper(d) for d in dev]
 
     @property
     def title(self):
@@ -305,9 +329,9 @@ class Player:
         """Returns the player's tool bar (if any)"""
         return call_thermavip_fun("player_tool_bar", (self.__id,))
 
-    def as_image(self) -> np.ndarray:
+    def as_image(self, background = "#FFFFFF") -> np.ndarray:
         """Returns the player's content as an image"""
-        return call_thermavip_fun("player_as_image", (self.__id,))
+        return call_thermavip_fun("player_as_image", (self.__id,background))
 
     
     def remove(self, data_name : str):
@@ -413,6 +437,16 @@ class Player:
         For a stacked plot, canvas identifies the vertically stacked index from the top.
         """
         return call_thermavip_fun("get_shape", (self.__id,shape_id, canvas))
+
+    def get_shape_groups(self, canvas = 0) -> list:
+        """Return all palyer shape groups. The usual groups are 'ROI', 'Polylines' and 'Points'.
+        """
+        return call_thermavip_fun("get_shape_groups", (self.__id, canvas))
+
+    def get_shapes(self, group_name : str, canvas =0 ) -> list:
+        """Return all shapes belonging to given group.
+        """
+        return call_thermavip_fun("get_shapes", (self.__id, group_name, canvas))
 
     def clear_shapes(self, canvas = 0):
         """Remove all shapes from player. 
@@ -610,7 +644,7 @@ class Player:
 
 
 
-class Workspace:
+class VipWorkspace:
     """
     Class representing a workspace within Thermavip.
     """
@@ -619,7 +653,10 @@ class Workspace:
     ColumnMajor = 1
 
     def __init__(self, _id = 0):
-
+        """Create from a workspace id.
+        If id is 0, create from the current workspace.
+        In this case, raise a RuntimeError if there are no workspace available.
+        """
         if _id == 0:
             _id = call_thermavip_fun("current_workspace", ())
         # Check workspace
@@ -630,13 +667,13 @@ class Workspace:
     def make() :
         """Create and select a workspace.
         """
-        return Workspace(call_thermavip_fun("workspace", (0,)))
+        return VipWorkspace(call_thermavip_fun("workspace", (0,)))
 
     @staticmethod
     def all():
         """Return the available workspaces.
         """
-        return [Workspace(i) for i in call_thermavip_fun("workspaces", ())]
+        return [VipWorkspace(i) for i in call_thermavip_fun("workspaces", ())]
 
     @staticmethod
     def set_max_columns(max_cols : int):
@@ -712,7 +749,7 @@ class Workspace:
     def players(self) -> list:
         """Returns available players within this workspace
         """
-        return [Player(i)  for i in call_thermavip_fun("workspace_players", (self.__id,))]
+        return [VipPlayer(i)  for i in call_thermavip_fun("workspace_players", (self.__id,))]
 
     def player(self, player_title : str):
         """Return player with given name.
@@ -727,10 +764,10 @@ class Workspace:
         """
         return call_thermavip_fun("workspace_as_session", (self.__id,))
 
-    def as_image(self) -> np.ndarray:
+    def as_image(self, background = "#FFFFFF") -> np.ndarray:
         """Return this workspace content as an image.
         """
-        return call_thermavip_fun("workspace_as_image", (self.__id,))
+        return call_thermavip_fun("workspace_as_image", (self.__id,background))
 
     def close(self):
         """Close this workspace.
@@ -868,15 +905,20 @@ def open(*args, **kwargs):
     For plot player only, additional argument 'canvas' represents the vertically stacked
     canvas index starting from 0 (top).
 
-    A successful load that creates no dedicated player returns 0. Errors from
+    A successful load that creates no dedicated player returns None. Errors from
     Thermavip propagate to the caller.
     """
     try:
-        if type(kwargs['player']) == Player:
+        if type(kwargs['player']) == VipPlayer:
             kwargs['player'] = kwargs['player'].id
     except:
         pass
-    return call_thermavip_fun("open", args, kwargs)
+    ret = call_thermavip_fun("open", args, kwargs)
+    if ret != 0:
+        ret = VipPlayer(ret)
+    else:
+        return None
+    return ret
 
 def clicked_point():
     """Return the last clicked curve point as [x, y]."""

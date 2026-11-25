@@ -2909,6 +2909,7 @@ VipIconBar::VipIconBar(VipMainWindow* win)
   , mainWindow(win)
 {
 	setIconSize(QSize(18, 18));
+	setObjectName("VipIconBar");
 
 	// add 5px space
 	QWidget* space = new QWidget();
@@ -3903,6 +3904,16 @@ void VipMainWindow::setMainTitle(const QString& title)
 QString VipMainWindow::mainTitle() const
 {
 	return d_data->iconBar->mainTitle();
+}
+
+void VipMainWindow::setMainIcon(const QIcon& icon)
+{
+	if (icon.availableSizes().size())
+		d_data->iconBar->setTitleIcon(icon.pixmap(icon.availableSizes().first()));
+}
+void VipMainWindow::setMainIconPath(const QString& path)
+{
+	d_data->iconBar->setTitleIcon(QPixmap(path));
 }
 
 VipDisplayArea* VipMainWindow::displayArea() const

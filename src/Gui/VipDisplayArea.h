@@ -653,6 +653,8 @@ class VIP_GUI_EXPORT VipMainWindow : public QMainWindow
 	Q_OBJECT
 	Q_PROPERTY(int margin READ margin WRITE setMargin)
 	Q_PROPERTY(int adjustColorPalette READ adjustColorPalette WRITE setAdjustColorPalette)
+	Q_PROPERTY(bool workspacesMaximized READ workspacesMaximized WRITE maximizeWorkspaces)
+	Q_PROPERTY(QString mainTitle READ mainTitle WRITE setMainTitle)
 
 	friend class VipDisplayTabWidget;
 	friend VIP_GUI_EXPORT VipMainWindow* vipGetMainWindow();
@@ -681,7 +683,6 @@ public:
 
 
 	/// @brief Get/Set the main Thermavip title (see VipIconBar)
-	void setMainTitle(const QString& title);
 	QString mainTitle() const;
 
 	/// @brief Returns the central VipDisplayArea
@@ -770,6 +771,13 @@ public:
 	virtual QMenu* createPopupMenu();
 
 public Q_SLOTS:
+
+	/// @brief Get/Set the main Thermavip title (see VipIconBar)
+	void setMainTitle(const QString& title);
+
+	void setMainIcon(const QIcon& icon);
+	void setMainIconPath(const QString& path);
+
 	/// @brief Restart Thermavip
 	void restart();
 

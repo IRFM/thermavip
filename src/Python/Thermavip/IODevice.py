@@ -47,7 +47,9 @@ class VipIODevice(VipProcessingObject):
         """Notify Thermavip of an assignment only when this sequential device is open."""
         if self.device_type == VipIODevice.Sequential and self.is_open():
             th.call_thermavip_fun("_update_device_output", (int(id(self)), name, idx))
-            
+    
+    def _set_time(self, time):
+        self.__time = time
     
     def __init__(self):
         """Initialize a closed, read-only resource with an empty path and invalid
@@ -354,6 +356,56 @@ class _VipDeviceFunctions(VipIODevice):
         """Native device inputs in index order."""
         pass
 
+    def open_wrapper(self, device, mode):
+        """
+        Wrap an existing opened VipIODevice.
+        This device becomes a wrapper and does not own the underlying VipIODevice.
+        Closing this device won't close the underlying VipIODevice.
+        Destroying this device won't destroy the underlying VipIODevice.
+        """
+        self.close()
+        if self._wrapper == 0:
+            self.dll._py_destroy(self._device)
+        else:
+            self.dll._py_register(self._wrapper, False)
+
+        self._device = ctypes.c_uint64(device)
+        self._wrapper = ctypes.c_uint64(device)
+        self.dll._py_register(self._wrapper, True)
+
+        if self.dll._py_device_mode(self._wrapper) != mode:
+            raise RuntimeError("invalid device open mode")
+
+        VipIODevice.path.fset(self, self.dll._py_device_path(self._device))
+
+        # Initialize properties and set their values
+        prop_count = self.dll._py_property_count(self._device)
+        self.properties.resize(prop_count)
+        for i in range(prop_count):
+            self.properties[i] = self.dll._py_get_property(self._device, i)
+            self.properties[i].name = self.dll._py_property_name(self._device, i)
+            
+        # Initialize inputs and set their values
+        in_count = self.dll._py_input_count(self._device)
+        self.inputs.resize(in_count)
+        for i in range(in_count):
+            self.inputs[i] = self.dll._py_get_input(self._device, int(i))
+            
+        # Initialize outputs and set their values
+        out_count = self.dll._py_output_count(self._device)
+        self.outputs.resize(out_count)
+        for i in range(out_count):
+            self.outputs[i] = self.dll._py_get_output(self._device, int(i))
+        
+        # Set the device type and size
+        self.device_type = self.dll._py_device_type(self._device)
+        self.size = self.dll._py_get_size(self._device)
+
+        # Set the device time
+        self._set_time(self.dll._py_device_time(self._device))
+        
+        super().open(mode)
+
 
     @VipIODevice.path.setter
     def path(self, p):
@@ -364,8 +416,12 @@ class _VipDeviceFunctions(VipIODevice):
         """
         # Create the internal device
         self.close()
-        self.dll._py_destroy(self._device)
+        if self._wrapper == 0:
+            self.dll._py_destroy(self._device)
+        else:
+            self.dll._py_register(self._wrapper, False)
         self._device = 0
+        self._wrapper = 0
         self._device = ctypes.c_uint64(self.dll._py_create(str(p).encode(), int(self._mode)))
         VipIODevice.path.fset(self, p)
         
@@ -391,10 +447,18 @@ class _VipDeviceFunctions(VipIODevice):
         # Set the device type
         self.device_type = self.dll._py_device_type(self._device)
 
+    @property
+    def type_name(self):
+        """
+        Return the underlying VipIODevice name (C++ class name).
+        """
+        return self.dll._py_device_type_name(self._device)
+
     def __init__(self, mode):
         """Load the VipGui device bindings and retain mode for native device creation."""
         super().__init__()
         self._device = 0
+        self._wrapper = 0
         self._mode = mode
         import distutils.ccompiler
         if os.name == 'nt':
@@ -404,6 +468,18 @@ class _VipDeviceFunctions(VipIODevice):
         
         self.dll._py_create.restype = ctypes.c_uint64
         self.dll._py_open.argtypes = [ctypes.c_uint64, ctypes.c_int32]
+
+        self.dll._py_device_type_name.argtype = [ctypes.c_uint64]
+        self.dll._py_device_type_name.restype = ctypes.py_object
+
+        self.dll._py_device_path.argtype = [ctypes.c_uint64]
+        self.dll._py_device_path.restype = ctypes.py_object
+
+        self.dll._py_device_time.argtype = [ctypes.c_uint64]
+        self.dll._py_device_time.restype = ctypes.c_int64
+
+        self.dll._py_device_mode.argtype = [ctypes.c_uint64]
+        self.dll._py_register.argtype = [ctypes.c_uint64, ctypes.c_bool]
         
         self.dll._py_output_count.argtypes = [ctypes.c_uint64]
         self.dll._py_input_count.argtypes = [ctypes.c_uint64]
@@ -452,17 +528,22 @@ class _VipDeviceFunctions(VipIODevice):
         self.dll._py_get_size.restype = ctypes.c_int32
         
         self.dll._py_apply.argtypes= [ctypes.c_uint64]
+        self.dll._py_read.argtypes= [ctypes.c_uint64,ctypes.c_int64]
         
         
     def __del__(self):
         """Close and destroy the native device."""
         self.close()
-        self.dll._py_destroy(self._device)
+        if self._wrapper == 0:
+            self.dll._py_destroy(self._device)
+        else:
+            self.dll._py_register(self._wrapper, False)
         
     def close(self):
         """Close the native device if present and reset the Python open mode."""
-        if self._device:
-            self.dll._py_close(self._device)
+        if self._wrapper == 0:
+            if self._device:
+                self.dll._py_close(self._device)
         super().close()
 
     def pos_to_time(self, pos : int) -> int:
@@ -508,6 +589,19 @@ class VipInputDevice(_VipDeviceFunctions):
 
     This example assumes a supported video file with indexed frames.
     """
+
+    @staticmethod
+    def open_wrapper(device):
+        """
+        Wrap an existing opened VipIODevice (C++).
+        Returned device becomes a wrapper and does not own the underlying VipIODevice.
+        Closing the device won't close the underlying VipIODevice.
+        Destroying the device won't destroy the underlying VipIODevice.
+        """
+        ret = VipInputDevice()
+        super(VipInputDevice, ret).open_wrapper(device, VipIODevice.ReadOnly);
+        return ret;
+
     def __init__(self):
         """Select ReadOnly for native device creation."""
         super().__init__(VipIODevice.ReadOnly)
@@ -570,6 +664,18 @@ class VipOutputDevice(_VipDeviceFunctions):
     data to inputs, and call apply() for each write. Call close() when finished.
     """
     
+    @staticmethod
+    def open_wrapper(device):
+        """
+        Wrap an existing opened VipIODevice (C++).
+        Returned device becomes a wrapper and does not own the underlying VipIODevice.
+        Closing the device won't close the underlying VipIODevice.
+        Destroying the device won't destroy the underlying VipIODevice.
+        """
+        ret = VipOutputDevice()
+        super(VipOutputDevice, ret).open_wrapper(device, VipIODevice.WriteOnly);
+        return ret;
+
     def __init__(self):
         """Select WriteOnly for native device creation."""
         super().__init__(VipIODevice.WriteOnly)

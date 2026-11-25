@@ -4,6 +4,9 @@
 #include "VipOptions.h"
 #include "VipIODevice.h"
 #include "VipStandardWidgets.h"
+#include "VipToolWidget.h"
+#include "VipPyOperation.h"
+#include "VipOptions.h"
 
 
 class QLabel;
@@ -115,6 +118,37 @@ private:
 	QToolButton* showEditor;
 };
 
+/// @brief A VipToolWidgetPlayer wrapping a Python QWidget
+class VIP_GUI_EXPORT PyToolWidgetPlayer : public VipToolWidgetPlayer
+{
+	Q_OBJECT
+
+public:
+	PyToolWidgetPlayer(const VipPyObject & widget, VipMainWindow* parent);
+	virtual bool setPlayer(VipAbstractPlayer*);
+
+private:
+	VipPyObject d_widget;
+};
+
+
+/// @brief A VipPageOption wrapping a Python QWidget
+class VIP_GUI_EXPORT PyPageOption : public VipPageOption
+{
+	Q_OBJECT
+public:
+	PyPageOption(const VipPyObject& widget);
+
+	/// Apply the settings as entered by the user
+	virtual void applyPage();
+	/// Update this page based on the acutal settings
+	virtual void updatePage();
+
+
+private:
+	VipPyObject d_widget;
+};
+
 
 
 extern "C" {
@@ -126,6 +160,10 @@ VIP_GUI_EXPORT uint64_t _py_create(const char* path, int mode);
 VIP_GUI_EXPORT void _py_open(uint64_t, int mode);
 VIP_GUI_EXPORT void _py_close(uint64_t);
 VIP_GUI_EXPORT void _py_destroy(uint64_t);
+VIP_GUI_EXPORT void _py_register(uint64_t addr, bool enable);
+VIP_GUI_EXPORT int _py_device_mode(uint64_t);
+VIP_GUI_EXPORT void* _py_device_type_name(uint64_t);
+VIP_GUI_EXPORT void* _py_device_path(uint64_t);
 VIP_GUI_EXPORT int _py_input_count(uint64_t);
 VIP_GUI_EXPORT int _py_output_count(uint64_t);
 VIP_GUI_EXPORT int _py_property_count(uint64_t);
@@ -145,6 +183,7 @@ VIP_GUI_EXPORT void _py_read(uint64_t, int64_t);
 VIP_GUI_EXPORT int64_t _py_pos_to_time(uint64_t, int64_t);
 VIP_GUI_EXPORT int64_t _py_time_to_pos(uint64_t, int64_t);
 VIP_GUI_EXPORT int64_t _py_get_size(uint64_t);
+VIP_GUI_EXPORT int64_t _py_device_time(uint64_t);
 VIP_GUI_EXPORT void* _py_time_window(uint64_t);
 VIP_GUI_EXPORT int _py_device_type(uint64_t);
 }

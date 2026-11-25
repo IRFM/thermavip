@@ -53,6 +53,7 @@
 #include "VipUniqueId.h"
 #include "VipXmlArchive.h"
 
+
 namespace
 {
 	// The value read is passed to QThread::setPriority, so anything outside the
@@ -4700,6 +4701,8 @@ bool VipProcessingList::useEventLoop() const
 
 void VipProcessingList::applyFrom(VipProcessingObject* obj)
 {
+
+
 	qint64 st = vipGetNanoSecondsSinceEpoch();
 
 	// The flag, not the mutex, is what keeps two pipelines from overlapping.
