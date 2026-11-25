@@ -263,7 +263,6 @@ static QVariant set_workspace_floating(int id, bool enable)
 	return workspaceId(wks);
 }
 
-
 static QVariant setWorkspaceMaxColumns(int cols)
 {
 	if (cols < 1)
@@ -578,7 +577,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 							continue;
 					}
 
-					if (QObject* obj = vipQObjectFromPython(p))
+					if (vipQObjectFromPython(p))
 						return error("cannot open widget in existing player");
 
 					auto any = toAnyData(p, kwargs);
@@ -619,7 +618,7 @@ static QVariant display(const QVariantList& lst, const QVariantMap& kwargs) // c
 					}
 					if (d.userType() != 0)
 						return d;
-					if (QObject* obj = vipQObjectFromPython(p)) {
+					if (vipQObjectFromPython(p)) {
 						return error("cannot open widget in existing player");
 					}
 					if (p.userType() == QMetaType::QString) {
@@ -1053,7 +1052,7 @@ static QVariant set_workspace_pos(int id, int pos)
 	int idx = tab->indexOf(wks);
 	if (pos < 0)
 		pos = 0;
-	else if (pos >= tab->count()-1)
+	else if (pos >= tab->count() - 1)
 		pos = tab->count() - 2;
 	tab->tabBar()->moveTab(idx, pos);
 	return {};
@@ -1082,7 +1081,7 @@ static QVariant workspace_as_image(int id, const QString& background)
 	// vipGetMainWindow()->displayArea()->setCurrentDisplayPlayerArea(this);
 
 	QImage img;
-	QColor back = QColor::fromString(background);
+	QColor back = QColor(background);
 
 	VipMultiDragWidget* mdrag = area->mainDragWidget(nullptr, false);
 	if (!mdrag) {
@@ -1121,8 +1120,7 @@ static QVariant workspace_orientation(int id)
 	auto* wks = findWorkspace(id);
 	if (!wks)
 		return error("invalid workspace id");
-	wks->mainDragWidget()->orientation() == Qt::Vertical ? 0 : 1;
-	return {};
+	return wks->mainDragWidget()->orientation() == Qt::Vertical ? 0 : 1;
 }
 
 static QVariant set_workspace_orientation(int id, int o)
@@ -1549,7 +1547,7 @@ static QVariant get_shapes(int player, const QString& group, int canvas)
 
 	auto lst = model->sceneModel().shapes(group);
 	QVariantList ret;
-	for (const auto & sh : lst)
+	for (const auto& sh : lst)
 		ret << vipToVariant(VipPyObject(vipVariantToPython(vipToVariant(sh)), borrow_t{}));
 
 	return vipToVariant(ret);
@@ -1739,7 +1737,7 @@ static QVariant extractTimeTrace(int player, const QVariantList& rois, const QVa
 	return QVariant(VipUniqueId::id(VipDragWidget::fromChild(out)));
 }
 
-static QVariant player_as_image(int player, const QString & background)
+static QVariant player_as_image(int player, const QString& background)
 {
 	auto* pl = findPlayer(player);
 	if (!pl)
@@ -1750,10 +1748,10 @@ static QVariant player_as_image(int player, const QString & background)
 
 	vipProcessEvents();
 
-	QColor back = QColor::fromString(background);
+	QColor back = QColor(background);
 	QPixmap pixmap(pl->size());
 	pixmap.fill(back); // Qt::transparent);
-	
+
 	{
 		QPainter p(&pixmap);
 		p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
@@ -1868,7 +1866,7 @@ static QVariant grid_visible(int player, int canvas)
 
 	return pl->plotWidget2D()->area()->grid()->isVisible();
 }
-static QVariant set_grid_visible(int player,bool visible, int canvas)
+static QVariant set_grid_visible(int player, bool visible, int canvas)
 {
 	auto* pl = qobject_cast<VipPlayer2D*>(findPlayer(player));
 	if (!pl)
@@ -1897,7 +1895,6 @@ static QVariant set_grid_visible(int player,bool visible, int canvas)
 	pl->plotWidget2D()->area()->grid()->setVisible(visible);
 	return {};
 }
-
 
 static QVariant auto_color_map(int player)
 {
@@ -2119,7 +2116,7 @@ struct AnnotationRef
 	int shapeId = 0;
 };
 
-static QMap<int, AnnotationRef> _annotations;
+/*static QMap<int, AnnotationRef> _annotations;
 static int _createId()
 {
 	int start = 1;
@@ -2128,7 +2125,7 @@ static int _createId()
 			return start;
 	}
 	return start;
-}
+}*/
 
 #include "VipAnnotationEditor.h"
 
@@ -2459,7 +2456,7 @@ static QVariant remove_processing(int player, const QString& fun_name, const QSt
 		VipProcessingList* p = lst.first();
 
 		// find a VipPyFunctionProcessing with given name
-		
+
 		for (int i = 0; i < p->size(); ++i) {
 			if (VipPyWrapperProcessing* proc = qobject_cast<VipPyWrapperProcessing*>(p->at(i)))
 				if (proc->property("_vip_processingName").toString() == fun_name) {
@@ -2700,8 +2697,6 @@ static int _registerEditors = vipStaticInit("registerWrapperEditors", registerWr
 #include "VipProcessingObjectEditor.h"
 #include "VipLock.h"
 
-
-
 static VipSpinlock _device_lock;
 static std::map<uint64_t, QObjectPointer> _devices;
 
@@ -2709,7 +2704,7 @@ static uint64_t from_ptr(QObject* p)
 {
 	uint64_t key = (uint64_t)(uintptr_t)p;
 	std::scoped_lock<VipSpinlock> guard(_device_lock);
-	_devices.insert({key,p});
+	_devices.insert({ key, p });
 	return key;
 }
 template<class T>
@@ -2720,7 +2715,7 @@ static T* to_ptr(uint64_t addr)
 	return it == _devices.end() ? nullptr : qobject_cast<T*>(it->second.data());
 }
 
-static void erase_ptr(QObject *p)
+static void erase_ptr(QObject* p)
 {
 	std::scoped_lock<VipSpinlock> guard(_device_lock);
 	_devices.erase((uint64_t)(uintptr_t)p);
@@ -2795,7 +2790,7 @@ int _py_device_mode(uint64_t addr)
 	return (int)dev->openMode();
 }
 
-void* _py_device_type_name(uint64_t addr) 
+void* _py_device_type_name(uint64_t addr)
 {
 	auto* dev = to_ptr<VipIODevice>(addr);
 	if (!dev) {
@@ -2805,7 +2800,7 @@ void* _py_device_type_name(uint64_t addr)
 	return vipVariantToPython(dev->info().classname);
 }
 
-void* _py_device_path(uint64_t addr) 
+void* _py_device_path(uint64_t addr)
 {
 	auto* dev = to_ptr<VipIODevice>(addr);
 	if (!dev) {

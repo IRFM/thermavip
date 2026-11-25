@@ -20,6 +20,12 @@ class VipMainWindow:
     This class always wrap the main Thermavip window, and multiple instances of VipMainWindow can live simultaneously.
     """
 
+    def _to_int(self, val):
+        try:
+            return int(val.value)
+        except:
+            return int(val)
+
     def __init__(self):
         # Ensure we have a widget
         self.widget
@@ -128,7 +134,7 @@ class VipMainWindow:
         a focus player is available. Use VipPlayer class to get the focus player.
         """
     
-        return th.call_thermavip_fun("add_tool_widget", (widget,floating,orientation.value, area.value, allowed_areas.value ))
+        return th.call_thermavip_fun("add_tool_widget", (widget,floating, self._to_int(orientation), self._to_int(area), self._to_int(allowed_areas) ))
 
     def add_page_option(self, widget, category : str, icon = str()):
         """Add a page to the global preferences.
