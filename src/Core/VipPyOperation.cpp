@@ -100,9 +100,9 @@ static inline int PyGILState_Check(void)
 
 #include "VipPyProcessing.h"
 
-QString vipGetPythonDirectory(const QString& suffix)
+QString vipGetPythonDirectory()
 {
-	QString path = vipGetDataDirectory(suffix) + "Python/";
+	QString path = vipGetDataDirectory() + "Python/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -110,9 +110,9 @@ QString vipGetPythonDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetPythonScriptsDirectory(const QString& suffix)
+QString vipGetPythonScriptsDirectory()
 {
-	QString path = vipGetPythonDirectory(suffix) + "Scripts/";
+	QString path = vipGetPythonDirectory() + "Scripts/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -120,15 +120,6 @@ QString vipGetPythonScriptsDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetPythonScriptsPlayerDirectory(const QString& suffix)
-{
-	QString path = vipGetPythonScriptsDirectory(suffix) + "Player/";
-	QDir dir(path);
-	if (!dir.exists())
-		dir.mkdir(path);
-
-	return path;
-}
 
 static VipPyObject importPyQtOrPySide()
 {
@@ -369,17 +360,6 @@ static QStringList listPyDir(const QString& dir)
 	return res;
 }
 
-QStringList vipGetPythonPlayerScripts(const QString& suffix)
-{
-	QString root = vipGetPythonScriptsPlayerDirectory(suffix);
-	root = root.mid(0, root.size() - 1);
-	QStringList r = listPyDir(root);
-	for (int i = 0; i < r.size(); ++i) {
-		r[i].replace("\\", "/");
-		r[i].remove(root + "/");
-	}
-	return r;
-}
 
 // tells if PyFinalize() has been called
 static bool __python_closed = false;

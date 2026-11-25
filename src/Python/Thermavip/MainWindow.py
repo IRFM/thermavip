@@ -40,6 +40,13 @@ class VipMainWindow:
         """Return the Generate signals QMenu so a plugin can add actions to it."""
         return th.call_thermavip_fun("get_generate_menu")
 
+    def extend_help_menu(self, function):
+        """Extend the help QMenu using a callback function called every time the menu is displayed.
+        The callback function takes the menu as parameter and should add new actions to it.
+        """
+        return th.call_thermavip_fun("extend_help_menu", (function,))
+
+
     @property
     def tool_widgets(self) -> list:
         """Return the list of tool widgets available in Thermavip."""

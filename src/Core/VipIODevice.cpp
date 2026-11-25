@@ -40,7 +40,7 @@
 #include <QTimer>
 
 #include <cmath>
-#include <unordered_set>
+#include <set>
 
 #include "VipCore.h"
 #include "VipDataType.h"
@@ -753,30 +753,21 @@ bool VipIODevice::isStreamingEnabled() const
 	return d_data->parameters.streamingEnabled;
 }
 
-static std::unordered_set<int> _unregistered_ids;
+static std::set<QString> _unregistered_ids;
 static VipSpinlock _unregistered_lock;
-static bool isUnregistered(int id)
+static bool isUnregistered(const QString & name)
 {
 	std::scoped_lock<VipSpinlock> lock(_unregistered_lock);
-	return _unregistered_ids.find(id) != _unregistered_ids.end();
+	return _unregistered_ids.find(name) != _unregistered_ids.end();
 }
 
-void VipIODevice::unregisterDeviceForPossibleReadWrite(int id)
+void VipIODevice::unregisterDeviceForPossibleReadWrite(const QString & name)
 {
-	if (id <= 0)
+	if (name.isEmpty())
 		return;
 
-	QObject* obj = vipCreateVariant(id).value<QObject*>();
-	if (obj) {
-		if (!qobject_cast<VipIODevice*>(obj)) {
-			delete obj;
-			return;
-		}
-		delete obj;
-
-		std::scoped_lock<VipSpinlock> lock(_unregistered_lock);
-		_unregistered_ids.insert(id);
-	}
+	std::scoped_lock<VipSpinlock> lock(_unregistered_lock);
+	_unregistered_ids.insert(name);
 }
 
 QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath& path, const QByteArray& first_bytes, const QVariant& out_value)
@@ -797,7 +788,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleReadDevices(const VipPath&
 	}
 
 	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
-		if (isUnregistered(it.value().metatype))
+		if (isUnregistered(it.value().classname))
 			continue;
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());
 
@@ -846,7 +837,7 @@ QList<VipProcessingObject::Info> VipIODevice::possibleWriteDevices(const VipPath
 		prefix = path.canonicalPath().mid(0, index);
 
 	for (QMultiMap<QString, VipProcessingObject::Info>::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
-		if (isUnregistered(it.value().metatype))
+		if (isUnregistered(it.value().classname))
 			continue;
 
 		VipIODevice* device = qobject_cast<VipIODevice*>(it.value().create());

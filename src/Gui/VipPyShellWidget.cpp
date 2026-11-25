@@ -25,14 +25,14 @@
 
 #include "VipLogging.h"
 
-QString vipGetPythonHistoryFile(const QString& suffix)
+QString vipGetPythonHistoryFile()
 {
 	// Not under vipGetPythonDirectory(), and not a .py: that directory is scanned at
 	// every start and each .py in it that declares a Thermavip class is executed in
 	// full. Typing one such class in the console once was enough for the whole
 	// command history to be replayed on the next start, outside any interactive
 	// context and without a word.
-	return vipGetDataDirectory(suffix) + "python_history.txt";
+	return vipGetDataDirectory() + "python_history.txt";
 }
 
 VipPyHistoryList::VipPyHistoryList(qint32 max_size)

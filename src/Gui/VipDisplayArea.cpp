@@ -3041,8 +3041,10 @@ VipCloseBar::VipCloseBar(VipMainWindow* win)
 	helpButton->setIcon(vipIcon("help.png"));
 	helpButton->setToolTip("Help");
 	helpButton->setAutoRaise(true);
+	helpButton->setObjectName("Help button");
 
 	QMenu* menu = new QMenu(helpButton);
+	menu->setObjectName("Help button menu");
 	helpButton->setMenu(menu);
 	helpButton->setPopupMode(QToolButton::InstantPopup);
 	this->help = addWidget(helpButton);

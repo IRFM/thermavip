@@ -13,7 +13,7 @@
 /**
 Returns the default shell history file used by VipPyShellWidget
 */
-VIP_GUI_EXPORT QString vipGetPythonHistoryFile(const QString& suffix = "thermavip");
+VIP_GUI_EXPORT QString vipGetPythonHistoryFile();
 
 class VIP_GUI_EXPORT VipPyHistoryList
 {

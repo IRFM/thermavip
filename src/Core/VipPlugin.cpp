@@ -171,7 +171,11 @@ VipLoadPlugins::VipLoadPlugins()
 {
 	VIP_CREATE_PRIVATE_DATA();
 
-	QSettings settings(vipGetPluginsDirectory() + "Plugins.ini", QSettings::IniFormat);
+	QString ini_file = vipGetUserPluginsDirectory() + "Plugins.ini";
+	if (!QFileInfo(ini_file).exists())
+		ini_file = vipGetPluginsDirectory() + "Plugins.ini";
+
+	QSettings settings(ini_file, QSettings::IniFormat);
 	QStringList groups = settings.childGroups();
 	for (int g = 0; g < groups.size(); ++g) {
 		settings.beginGroup(groups[g]);
@@ -215,7 +219,7 @@ QStringList VipLoadPlugins::pluginCategories() const
 QStringList VipLoadPlugins::plugins(const QString& category) const
 {
 	if (category == "Folder")
-		return pluginsInDir(vipGetPluginsDirectory()) + pluginsInDir(vipGetDataDirectory() + "VipPlugins");
+		return pluginsInDir(vipGetPluginsDirectory()) + pluginsInDir(vipGetUserPluginsDirectory());
 	else
 		return d_data->availablePlugins[category];
 }

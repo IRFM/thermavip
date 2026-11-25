@@ -729,3 +729,14 @@ class VipOutputDevice(_VipDeviceFunctions):
             
         self.dll._py_apply(self._device)
         self.size = self.dll._py_get_size(self._device)
+
+
+
+    
+def unregister_io_device(device_name):
+    """Unregister a VipIODevice type.
+    Unregistered device type cannot be used when opening a file in read or write mode.
+    This function should be used only if you intend to override the current behavior when opening specific file types. 
+    """
+    
+    return th.call_thermavip_fun('unregister_io_device', (device_name,))

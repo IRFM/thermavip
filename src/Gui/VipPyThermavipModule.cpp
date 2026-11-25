@@ -12,6 +12,8 @@
 #include "VipPlayWidget.h"
 #include "VipPythonManager.h"
 #include "VipLogging.h"
+#include "VipEnvironment.h"
+#include "VipSearchLineEdit.h"
 
 #if VIP_WITH_VTK
 #include "VipVTKPlayer.h"
@@ -2505,6 +2507,74 @@ static QVariant log_error(const QString& txt)
 	return {};
 }
 
+static QVariant env_dir(const QString& category)
+{
+	if (category == "data")
+		return vipGetDataDirectory();
+	if (category == "log")
+		return vipGetLogDirectory();
+	if (category == "plugins_log")
+		return vipGetLogPluginsDirectory();
+	if (category == "tmp")
+		return vipGetTempDirectory();
+	if (category == "pers")
+		return vipGetPerspectiveDirectory();
+	if (category == "user_pers")
+		return vipGetUserPerspectiveDirectory();
+	if (category == "plugins")
+		return vipGetPluginsDirectory();
+	if (category == "user_plugins")
+		return vipGetUserPluginsDirectory();
+
+	return error("unknown category");
+}
+
+static QVariant unregister_io_device(const QString& name)
+{
+	VipIODevice::unregisterDeviceForPossibleReadWrite(name);
+	return {};
+}
+
+static QVariant register_shortcut(const QString& name, const VipPyObjectPtr& fun)
+{
+	if (!fun || !(*fun) || !fun->hasMember("__call__"))
+		return error("invalid function object");
+
+	VipShortcutsHelper::registerShorcut(name, [fun]() {
+		VipGILLocker lock;
+		fun->callMember("__call__");
+	});
+	return {};
+}
+
+static QVariant extend_help_menu(const VipPyObjectPtr& fun)
+{
+	vipExtendHelpMenu([fun](QMenu* menu) {
+		VipGILLocker lock;
+		fun->callMember("__call__", QVariantList() << vipToVariant(vipPythonFromQObject(menu)));
+	});
+	return {};
+}
+
+static QVariant workspace_callback(const VipPyObjectPtr& fun, bool call_now)
+{
+	VipDisplayPlayerArea::addCustomizeFunction([fun](auto* wks) {
+		  VipGILLocker lock;
+		  fun->callMember("__call__", QVariantList() << workspaceId(wks));
+		}, call_now);
+	return {};
+}
+
+static QVariant player_callback(const VipPyObjectPtr& fun)
+{
+	auto f = [fun](VipIODevice*, VipAbstractPlayer* pl) {
+		VipGILLocker lock;
+		fun->callMember("__call__", QVariantList() << playerId(pl));
+	};
+	VipFDDeviceAddedOnPlayer().append<void(VipIODevice*, VipAbstractPlayer*)>(f);
+	return {};
+}
+
 static int registerFunctions()
 {
 	// Private functions
@@ -2515,6 +2585,14 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(log_info, "log_info", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(log_warning, "log_warning", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(log_error, "log_error", {}, false));
+
+
+	vipRegisterFunction(vipMakeFunctionObject(env_dir, "env_dir", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(unregister_io_device, "unregister_io_device", {}, false));
+	vipRegisterFunction(vipMakeFunctionObject(register_shortcut, "register_shortcut"));
+	vipRegisterFunction(vipMakeFunctionObject(extend_help_menu, "extend_help_menu"));
+	vipRegisterFunction(vipMakeFunctionObject(workspace_callback, "workspace_callback"));
+	vipRegisterFunction(vipMakeFunctionObject(player_callback, "player_callback"));
 
 	// VipProgress wrapper functions
 	vipRegisterFunction(make_progress, "make_progress", {}, false);

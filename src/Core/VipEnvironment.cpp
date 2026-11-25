@@ -43,7 +43,9 @@
 #define PINUP_VAR_ENV "USER"
 #endif
 
-QString vipGetDataDirectory(const QString& suffix)
+const QString suffix = "thermavip";
+
+QString vipGetDataDirectory()
 {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	QString path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
@@ -67,9 +69,9 @@ QString vipGetDataDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetLogDirectory(const QString& suffix)
+QString vipGetLogDirectory()
 {
-	QString path = vipGetDataDirectory(suffix) + "Log/";
+	QString path = vipGetDataDirectory() + "Log/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -77,9 +79,9 @@ QString vipGetLogDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetLogPluginsDirectory(const QString& suffix)
+QString vipGetLogPluginsDirectory()
 {
-	QString path = vipGetLogDirectory(suffix) + "Plugins/";
+	QString path = vipGetLogDirectory() + "Plugins/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -87,7 +89,7 @@ QString vipGetLogPluginsDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetTempDirectory(const QString& suffix)
+QString vipGetTempDirectory()
 {
 	QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + suffix + "/";
 	path.replace("\\", "/");
@@ -99,9 +101,9 @@ QString vipGetTempDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetPerspectiveDirectory(const QString& suffix)
+QString vipGetPerspectiveDirectory()
 {
-	QString path = vipGetDataDirectory(suffix) + "Perspectives/";
+	QString path = vipGetDataDirectory() + "Perspectives/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -109,9 +111,9 @@ QString vipGetPerspectiveDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetUserPerspectiveDirectory(const QString& suffix)
+QString vipGetUserPerspectiveDirectory()
 {
-	QString path = vipGetDataDirectory(suffix) + "Perspectives/";
+	QString path = vipGetDataDirectory() + "Perspectives/";
 	QDir dir(path);
 	if (!dir.exists())
 		dir.mkdir(path);
@@ -119,25 +121,6 @@ QString vipGetUserPerspectiveDirectory(const QString& suffix)
 	return path;
 }
 
-QString vipGetRawDeviceDirectory(const QString& suffix)
-{
-	QString path = vipGetDataDirectory(suffix) + "RawDevices/";
-	QDir dir(path);
-	if (!dir.exists())
-		dir.mkdir(path);
-
-	return path;
-}
-
-QString vipGetUserRawDeviceDirectory(const QString& suffix)
-{
-	QString path = vipGetDataDirectory(suffix) + "RawDevices/";
-	QDir dir(path);
-	if (!dir.exists())
-		dir.mkdir(path);
-
-	return path;
-}
 
 #include <qcoreapplication.h>
 QString vipGetPluginsDirectory()
@@ -155,4 +138,9 @@ QString vipGetPluginsDirectory()
 		dir.mkdir(path);
 
 	return path;
+}
+
+QString vipGetUserPluginsDirectory()
+{
+	return vipGetDataDirectory() + "VipPlugins/";
 }

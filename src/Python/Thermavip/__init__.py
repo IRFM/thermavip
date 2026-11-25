@@ -250,6 +250,13 @@ class VipPlayer:
         """Return the current player"""
         return VipPlayer(call_thermavip_fun("current_player"))
 
+    @staticmethod
+    def register_on_device_attached(function):
+        """Register a callback function called every time a new VipIODevice is attached to a player.
+        The callback function takes as parameter the player id.
+        """
+        call_thermavip_fun("player_callback", (function,))
+
     @property
     def id(self):
         """Return the player id within Thermavip"""
@@ -676,6 +683,14 @@ class VipWorkspace:
         return [VipWorkspace(i) for i in call_thermavip_fun("workspaces", ())]
 
     @staticmethod
+    def register_on_create(function, call_now = True):
+        """Register a callback function called every time a workspace is created.
+        The callback function takes as parameter the workspace id.
+        If call_now is True, the callback function is called on all existing workspaces.
+        """
+        call_thermavip_fun("workspace_callback", (function,call_now))
+
+    @staticmethod
     def set_max_columns(max_cols : int):
         """Set all workspaces maximum column size for newly added players.
         """
@@ -864,8 +879,45 @@ class VipWorkspace:
 
     
 
+def env_data_dir():
+    """Return the data directory
+    """
+    return call_thermavip_fun("env_dir", ("data",))
 
+def env_tmp_dir():
+    """Return the tmp directory
+    """
+    return call_thermavip_fun("env_dir", ("tmp",))
 
+def env_log_dir():
+    """Return the log directory
+    """
+    return call_thermavip_fun("env_dir", ("log",))
+
+def env_plugins_log_dir():
+    """Return the log directory
+    """
+    return call_thermavip_fun("env_dir", ("plugins_log",))
+
+def env_perspectives_dir():
+    """Return the perspectives directory
+    """
+    return call_thermavip_fun("env_dir", ("pers",))
+
+def env_user_perspectives_dir():
+    """Return the user perspectives directory
+    """
+    return call_thermavip_fun("env_dir", ("user_pers",))
+
+def env_plugins_dir():
+    """Return the plugins directory
+    """
+    return call_thermavip_fun("env_dir", ("plugins",))
+
+def env_user_plugins_dir():
+    """Return the user plugins directory
+    """
+    return call_thermavip_fun("env_dir", ("user_plugins",))
 
 
 def log_info(text: str):
@@ -882,6 +934,12 @@ def log_error(text: str):
     """Write text to the Thermavip log at error level."""
     call_thermavip_fun("log_error", (text,))
 
+def register_shortcut(name : str, fun):
+    """Register a shortcut function associated to given name.
+    This function can only be executed from the top search line edit.
+    The name is used to access it from the search line edit.
+    """
+    call_thermavip_fun("register_shortcut", (name, fun))
 
 def query(title=str(), default_value=str()):
     """Prompt for a pulse number or time range and return the result as a string.

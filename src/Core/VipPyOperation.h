@@ -45,13 +45,12 @@
 #include "VipCore.h"
 
 /// @brief Returns the Python data directory
-VIP_CORE_EXPORT QString vipGetPythonDirectory(const QString& suffix = "thermavip");
+VIP_CORE_EXPORT QString vipGetPythonDirectory();
 /// @brief Returns the Python scripts directory
-VIP_CORE_EXPORT QString vipGetPythonScriptsDirectory(const QString& suffix = "thermavip");
-/// @brief Returns the directory containing scripts dedicated to player customization
-VIP_CORE_EXPORT QString vipGetPythonScriptsPlayerDirectory(const QString& suffix = "thermavip");
-/// @brief Returns all Python files in the player's scripts directory
-VIP_CORE_EXPORT QStringList vipGetPythonPlayerScripts(const QString& suffix = "thermavip");
+VIP_CORE_EXPORT QString vipGetPythonScriptsDirectory();
+
+
+
 /// @brief Returns the current thread Id
 // VIP_CORE_EXPORT qint64 vipPyThreadId();
 

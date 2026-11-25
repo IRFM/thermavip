@@ -274,8 +274,9 @@ public:
 	static QStringList possibleReadFilters(const VipPath& path, const QByteArray& first_bytes, const QVariant& out_value = QVariant());
 	/// @brief Returns the file filters (as returned by #VipIODevice::fileFilters)  for the write devices that can handle given path and input data
 	static QStringList possibleWriteFilters(const VipPath& path, const QVariantList& input_data);
-	/// @brief Unregister a VipIODevice type in order to NOT be visible by calls to possibleReadDevices() and possibleWriteDevices()
-	static void unregisterDeviceForPossibleReadWrite(int id);
+	/// @brief Unregister a VipIODevice type in order to NOT be visible by calls to possibleReadDevices() and possibleWriteDevices().
+	/// The device name is the one returned by device->info().classname.
+	static void unregisterDeviceForPossibleReadWrite(const QString & name);
 
 public Q_SLOTS:
 
