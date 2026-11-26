@@ -2348,6 +2348,12 @@ static QVariant add_tool_widget(const VipPyObjectPtr& widget, bool floating, int
 	tool->setAllowedAreas((Qt::DockWidgetAreas)allowed);
 	vipGetMainWindow()->addDockWidget((Qt::DockWidgetArea)a, tool);
 	tool->setFloating(floating);
+
+	if (!w->windowIcon().isNull()) {
+		QAction* infos = vipGetMainWindow()->toolsToolBar()->addAction(w->windowIcon(), title);
+		tool->setAction(infos);
+	}
+
 	return vipToVariant(VipPyObjectPtr(new VipPyObject(vipPythonFromQObject(tool))));
 }
 
@@ -2558,10 +2564,12 @@ static QVariant extend_help_menu(const VipPyObjectPtr& fun)
 
 static QVariant workspace_callback(const VipPyObjectPtr& fun, bool call_now)
 {
-	VipDisplayPlayerArea::addCustomizeFunction([fun](auto* wks) {
+	VipDisplayPlayerArea::addCustomizeFunction(
+	  [fun](auto* wks) {
 		  VipGILLocker lock;
 		  fun->callMember("__call__", QVariantList() << workspaceId(wks));
-		}, call_now);
+	  },
+	  call_now);
 	return {};
 }
 
@@ -2585,7 +2593,6 @@ static int registerFunctions()
 	vipRegisterFunction(vipMakeFunctionObject(log_info, "log_info", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(log_warning, "log_warning", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(log_error, "log_error", {}, false));
-
 
 	vipRegisterFunction(vipMakeFunctionObject(env_dir, "env_dir", {}, false));
 	vipRegisterFunction(vipMakeFunctionObject(unregister_io_device, "unregister_io_device", {}, false));

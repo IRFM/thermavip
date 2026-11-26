@@ -1,6 +1,36 @@
 # -*- coding: utf-8 -*-
 
 """Python interface to a Thermavip session.
+
+The Thermavip Python module is used to interact with Thermavip software 
+from within a Thermavip instance, and to create Python-based plugins.
+
+A Thermavip Python plugin is Python module on the form of a folder located
+in the 'VipPlugins' directory, either in the software installation of Thermavip
+user data folder. The user data folder is accessible from Thermavip: 
+'Preferences' -> 'Environment' -> 'Thermavip data folder'.
+
+A Python plugin must define plugin interface at the module level (inheriting
+VipPluginInterface) and an object of that type names 'PluginName_interface'.
+At startup, Thermavip will import the plugin module and call the load()
+methos from this object.
+
+While not as complete as the C++ SDK, the Thermavip Python module provides 
+several mechanisms to interact with the software:
+    - Workspaces manipulation through the VipWorkspace class,
+    - Players manipulation through the VipPlayer class,
+    - Opening signals/videos/widgets/custom devices/(and more...) with the open() function,
+    - Logging information to the console with functions log_info(), log_warning(), log_error(),
+    - Creating custom processing and IO devices using the VipProcessingObject class (Processing module)
+    and VipIODevice class (IODevice module), Wrapping C++ IO devicse using VipInputDevice and VipOutputDevice classes,
+    - Manipulating the main interface using the VipMainWindow class (MainWindow module) and adding new dock widgets,
+    - Adding callback functions on workspace/player creation,
+    - Displaying a (potentially modal/cancelable) progress bar using the VipProgress class (Progress module)
+    - And much more...
+
+Some of these mechanisms are only allowed if PyQt or Pyside is found and with the same Qt version as the one used
+to build Thermavip SDK.
+
 """
 
 import sys
@@ -261,6 +291,15 @@ class VipPlayer:
     def id(self):
         """Return the player id within Thermavip"""
         return self.__id
+
+    @property
+    def alive(self):
+        """Tell whether this player still exists"""
+        try:
+            self.title
+            return True
+        except:
+            return False
 
     @property
     def workspace(self) -> int:
@@ -706,6 +745,15 @@ class VipWorkspace:
     def id(self) -> int:
         """Returns the player id within Thermavip"""
         return self.__id
+
+    @property
+    def alive(self):
+        """Tell whether this workspace still exists"""
+        try:
+            self.title
+            return True
+        except:
+            return False
 
     @property
     def pos(self) -> int:
