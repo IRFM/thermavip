@@ -106,7 +106,6 @@ struct VipLogging::LogFrame
 	}
 };
 
-
 void VipLogging::run()
 {
 	while (!d_data->stop) {
@@ -345,9 +344,10 @@ void VipLogging::log(const QString& text, Level level, Outputs outputs, qint64 t
 	if (!isEnabled())
 		return;
 
-	if (vip_log_detail::_vip_enable_debug()){
-		vip_debug(formatLogEntry(text,level,QDateTime::currentDateTime()).data());
-	} 
+	/*if (vip_log_detail::_vip_enable_debug()) {
+		const auto msg = formatLogEntry(text, level, QDateTime::currentDateTime());
+		vip_debug(msg.data());
+	}*/
 
 	if (time < 0)
 		pushLog(LogFrame(text, level, outputs));
